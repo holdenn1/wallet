@@ -1,14 +1,12 @@
+import { RefreshToken } from 'src/auth/entities/refresh-token.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinColumn,
   OneToMany,
-  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { RefreshToken } from './refresh-token.entity';
 
 @Entity({ name: 'app_user' })
 export class User {
@@ -33,8 +31,11 @@ export class User {
   @Column()
   password: string;
 
-  @Column()
+  @Column({ default: 0 })
   cash: string;
+
+  @Column({ default: false })
+  isEmailConfirmed: boolean;
 
   @OneToMany(() => RefreshToken, (token) => token.user)
   refreshTokens: RefreshToken[];

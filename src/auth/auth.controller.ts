@@ -3,19 +3,48 @@ import {
   Get,
   Post,
   Body,
-  Patch,
-  Param,
-  Delete,
+  UsePipes,
+  ValidationPipe,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
+import { CreateUserDto } from 'src/user/dto/create-user.dto';
+import { AccessTokenGuard } from './guards/accessToken.guard';
+import { RefreshTokenGuard } from './guards/refreshToken.guard';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private authService: AuthService) {}
 
-  @Post()
-  create(@Body() createAuthDto: CreateAuthDto) {
-    return this.authService.create(createAuthDto);
+  @Post('registration')
+  @UsePipes(new ValidationPipe())
+  registration(@Body() createUserDto: CreateUserDto) {
+    return this.authService.registration(createUserDto);
+  }
+
+  @Post('login')
+  @UsePipes(new ValidationPipe())
+  login(@Body() data: CreateAuthDto) {
+    return this.authService.login(data);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Get('logout')
+  logout(@Req() req) {
+    this.authService.logout(req.user['sub']);
+  }
+
+  @Get('refresh')
+  @UseGuards(RefreshTokenGuard)
+  refreshTokens(@Req() req) {
+    return this.authService.refreshTokens(req.user);
+  }
+
+  @Get('refresh-login')
+  @UseGuards(RefreshTokenGuard)
+  refreshTokensLogin(@Req() req) {
+    return this.authService.refreshTokensLogin(req.user);
   }
 }
