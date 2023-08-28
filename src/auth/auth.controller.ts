@@ -1,11 +1,13 @@
 import {
   Controller,
+  Response,
   Get,
   Post,
   Body,
   UsePipes,
   ValidationPipe,
   UseGuards,
+  Param,
   Req,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -40,6 +42,14 @@ export class AuthController {
   @UseGuards(RefreshTokenGuard)
   refreshTokens(@Req() req) {
     return this.authService.refreshTokens(req.user);
+  }
+
+  @Get('verify/:id/:token')
+  async verify(@Response() res, @Param('token') token: string) {
+    const user = await this.authService.activate(token);
+    if (user) {
+      return res.redirect('https://nestjs.com/');
+    }
   }
 
   @Get('refresh-login')

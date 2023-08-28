@@ -6,12 +6,15 @@ import { UserRequest } from './types';
 import * as argon2 from 'argon2';
 import { mapToUserProfile } from './mappers';
 import { RefreshTokenService } from './refreshToken.service';
+import * as nodemailer from 'nodemailer';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
   constructor(
     private userService: UserService,
     private refreshTokenService: RefreshTokenService,
+    private configService: ConfigService,
   ) {}
 
   async registration(createUserDto: CreateUserDto): Promise<any> {
@@ -34,6 +37,12 @@ export class AuthService {
       user: newUser,
       token: tokens.refreshToken,
     });
+
+    const link = `${this.configService.get('BASE_URL')}/auth/verify/${
+      newUser.id
+    }/${tokens.refreshToken}`;
+
+    await this.verifyEmail(newUser.email, link);
     return { ...tokens, user: mapToUserProfile(newUser) };
   }
 
@@ -70,5 +79,40 @@ export class AuthService {
     const tokens = await this.refreshTokens(userData);
     const user = mapToUserProfile(findUser);
     return { user, tokens };
+  }
+
+  async verifyEmail(to: string, link: string) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: this.configService.get('EMAIL_HOST'),
+        port: this.configService.get('EMAIL_PORT'),
+        service: 'gmail',
+        secure: true,
+        auth: {
+          user: this.configService.get('EMAIL_USER'),
+          pass: this.configService.get('EMAIL_PASS'),
+        },
+        from: this.configService.get('EMAIL_USER'),
+      });
+
+      await transporter.sendMail({
+        from: this.configService.get('EMAIL_USER'),
+        to,
+        subject: 'Activation an account' + this.configService.get('BASE_URL'),
+        text: '',
+        html: `
+        <div>
+          <h1>For activation, follow the link</h1>
+          <a href='${link}'>${link}</a>
+        </div>
+        `,
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async activate(activationLink: string) {
+    return await this.userService.confirmEmailAddress(activationLink);
   }
 }

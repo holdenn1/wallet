@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
+
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -15,7 +16,7 @@ export class UserService {
   async create(dto: CreateUserDto) {
     return await this.userRepository.save(dto);
   }
-  
+
   async findOneById(id: number) {
     return await this.userRepository.findOne({
       where: { id },
@@ -28,5 +29,17 @@ export class UserService {
         email: email,
       },
     });
+  }
+
+  async confirmEmailAddress(link: string) {
+    const user = await this.userRepository.findOne({
+      relations: { refreshTokens: true },
+      where: { refreshTokens: { refreshToken: link } },
+    });
+    if (!user) {
+      throw new BadRequestException('Uncorrected link');
+    }
+    user.isEmailConfirmed = true;
+    return await this.userRepository.save(user);
   }
 }
