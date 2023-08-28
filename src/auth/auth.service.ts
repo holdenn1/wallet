@@ -70,7 +70,7 @@ export class AuthService {
     return this.refreshTokenService.removeToken(userId);
   }
 
-  async refreshTokens(user: UserRequest) {
+  refreshTokens(user: UserRequest) {
     return this.refreshTokenService.refreshTokens(user);
   }
 
