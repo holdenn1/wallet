@@ -9,6 +9,7 @@ import { RefreshToken } from './entities/refresh-token.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { RefreshTokenService } from './refreshToken.service';
+import { GoogleStrategy } from './strategies/google.strategy';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { RefreshTokenService } from './refreshToken.service';
   controllers: [AuthController],
   providers: [
     AuthService,
+    GoogleStrategy,
     RefreshTokenService,
     AccessTokenStrategy,
     RefreshTokenStrategy,

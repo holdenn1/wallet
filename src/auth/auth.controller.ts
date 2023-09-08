@@ -15,10 +15,21 @@ import { CreateAuthDto } from './dto/create-auth.dto';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { AccessTokenGuard } from './guards/accessToken.guard';
 import { RefreshTokenGuard } from './guards/refreshToken.guard';
+import { GoogleGuard } from './guards/google.guard';
 
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
+
+  @Get('google')
+  @UseGuards(GoogleGuard)
+  async googleAuth(@Req() req) {}
+
+  @Get('google/redirect')
+  @UseGuards(GoogleGuard)
+  googleAuthRedirect(@Req() req) {
+    return this.authService.getUserFromGoogleAuth(req.user);
+  }
 
   @Post('registration')
   @UsePipes(new ValidationPipe())

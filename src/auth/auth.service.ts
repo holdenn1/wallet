@@ -3,9 +3,9 @@ import { UserService } from '../user/user.service';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { UserRequest } from './types';
-import * as argon2 from 'argon2';
 import { mapToUserProfile } from './mappers';
 import { RefreshTokenService } from './refreshToken.service';
+import * as argon2 from 'argon2';
 import * as nodemailer from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
 
@@ -38,11 +38,13 @@ export class AuthService {
       token: tokens.refreshToken,
     });
 
-    const link = `${this.configService.get('BASE_URL')}/auth/verify/${
-      newUser.id
-    }/${tokens.refreshToken}`;
+    if (!createUserDto.isEmailConfirmed) {
+      const link = `${this.configService.get('BASE_URL')}/auth/verify/${
+        newUser.id
+      }/${tokens.refreshToken}`;
 
-    await this.verifyEmail(newUser.email, link);
+      await this.verifyEmail(newUser.email, link);
+    }
     return { ...tokens, user: mapToUserProfile(newUser) };
   }
 
@@ -64,6 +66,17 @@ export class AuthService {
       token: tokens.refreshToken,
     });
     return { ...tokens, user: mapToUserProfile(findUser) };
+  }
+
+  getUserFromGoogleAuth(user: any) {
+    if (!user) {
+      throw new BadRequestException('No user from google');
+    }
+
+    return {
+      ...user,
+      isEmailConfirmed: true,
+    };
   }
 
   logout(userId: number) {
