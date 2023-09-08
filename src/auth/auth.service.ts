@@ -17,17 +17,22 @@ export class AuthService {
     private configService: ConfigService,
   ) {}
 
-  async registration(createUserDto: CreateUserDto): Promise<any> {
-    const userExists = await this.userService.findOneByEmail(
+  async registration(
+    createUserDto: CreateUserDto,
+    userPhoto: Express.Multer.File,
+  ): Promise<any> {
+    const userExists = await this.userService.findOneUserByEmail(
       createUserDto.email,
     );
     if (userExists) {
       throw new BadRequestException('User already exists');
     }
     const hash = await argon2.hash(createUserDto.password);
+    const avatar = await this.userService.uploadAvatar(userPhoto);
     const newUser = await this.userService.create({
       ...createUserDto,
       password: hash,
+      photo: avatar,
     });
     const tokens = await this.refreshTokenService.getTokens(
       newUser.id,
@@ -49,7 +54,7 @@ export class AuthService {
   }
 
   async login(data: CreateAuthDto) {
-    const findUser = await this.userService.findOneByEmail(data.email);
+    const findUser = await this.userService.findOneUserByEmail(data.email);
     if (!findUser) throw new BadRequestException('User does not exist');
     const passwordMatches = await argon2.verify(
       findUser.password,
@@ -88,7 +93,7 @@ export class AuthService {
   }
 
   async refreshTokensLogin(userData: UserRequest) {
-    const findUser = await this.userService.findOneById(userData.sub);
+    const findUser = await this.userService.findOneUserById(userData.sub);
     const tokens = await this.refreshTokens(userData);
     const user = mapToUserProfile(findUser);
     return { user, tokens };

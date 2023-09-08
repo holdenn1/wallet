@@ -1,5 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import './firebase';
+
 
 const PORT = process.env.PORT || 5000;
 

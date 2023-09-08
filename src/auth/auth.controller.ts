@@ -8,6 +8,8 @@ import {
   ValidationPipe,
   UseGuards,
   Param,
+  UploadedFile,
+  UseInterceptors,
   Req,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -15,6 +17,7 @@ import { CreateAuthDto } from './dto/create-auth.dto';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { AccessTokenGuard } from './guards/accessToken.guard';
 import { RefreshTokenGuard } from './guards/refreshToken.guard';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { GoogleGuard } from './guards/google.guard';
 
 @Controller('auth')
@@ -33,8 +36,9 @@ export class AuthController {
 
   @Post('registration')
   @UsePipes(new ValidationPipe())
-  registration(@Body() createUserDto: CreateUserDto) {
-    return this.authService.registration(createUserDto);
+  @UseInterceptors(FileInterceptor('photo'))
+  registration(@Body() createUserDto: CreateUserDto, @UploadedFile() file: Express.Multer.File) {    
+    return this.authService.registration(createUserDto, file);
   }
 
   @Post('login')

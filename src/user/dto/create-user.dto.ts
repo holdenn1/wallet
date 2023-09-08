@@ -7,11 +7,10 @@ export class CreateUserDto {
   @Matches(/^(?!\s)[^\s].*$/, { message: 'Last name is a required field' })
   lastName: string;
 
-  @IsString()
   photo: string;
 
   @IsString()
-  age: string
+  age: string;
 
   @IsEmail()
   email: string;
@@ -25,5 +24,5 @@ export class CreateUserDto {
   password: string;
 
   @IsOptional()
-  isEmailConfirmed:boolean
+  isEmailConfirmed: boolean;
 }
