@@ -6,6 +6,7 @@ export const mapToUserProfile = (user: User): any => ({
   lastName: user.lastName,
   email: user.email,
   photo: user.photo,
-  age: user.age,
+  birthday: user.birthday,
   cash: user.cash,
+  isEmailConfirmed: user.isEmailConfirmed,
 });

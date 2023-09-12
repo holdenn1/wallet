@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { CreateAuthDto } from './dto/create-auth.dto';
-import { UserRequest } from './types';
+import { UserDataFromGoogle, UserRequest } from './types';
 import { mapToUserProfile } from './mappers';
 import { RefreshTokenService } from './refreshToken.service';
 import * as argon2 from 'argon2';
@@ -28,12 +28,15 @@ export class AuthService {
       throw new BadRequestException('User already exists');
     }
     const hash = await argon2.hash(createUserDto.password);
+
     const avatar = await this.userService.uploadAvatar(userPhoto);
-    const newUser = await this.userService.create({
+
+    const userWithPhotoAndHashPassword = {
       ...createUserDto,
       password: hash,
       photo: avatar,
-    });
+    };
+    const newUser = await this.userService.create(userWithPhotoAndHashPassword);
     const tokens = await this.refreshTokenService.getTokens(
       newUser.id,
       newUser.email,
@@ -43,13 +46,12 @@ export class AuthService {
       token: tokens.refreshToken,
     });
 
-    if (!createUserDto.isEmailConfirmed) {
-      const link = `${this.configService.get('BASE_URL')}/auth/verify/${
-        newUser.id
-      }/${tokens.refreshToken}`;
+    const link = `${this.configService.get('BASE_URL')}/auth/verify/${
+      newUser.id
+    }/${tokens.refreshToken}`;
 
-      await this.verifyEmail(newUser.email, link);
-    }
+    await this.verifyEmail(newUser.email, link);
+
     return { ...tokens, user: mapToUserProfile(newUser) };
   }
 
@@ -73,15 +75,43 @@ export class AuthService {
     return { ...tokens, user: mapToUserProfile(findUser) };
   }
 
-  getUserFromGoogleAuth(user: any) {
-    if (!user) {
+  async googleAuth(userDataFromGoogle: UserDataFromGoogle, res) {
+    if (!userDataFromGoogle) {
       throw new BadRequestException('No user from google');
     }
 
-    return {
-      ...user,
+    const user = await this.userService.findOneUserByEmail(
+      userDataFromGoogle.email,
+    );
+
+    const createUser: CreateUserDto = {
+      email: userDataFromGoogle.email,
+      firstName: userDataFromGoogle.firstName,
+      lastName: userDataFromGoogle.lastName,
+      photo: userDataFromGoogle.picture ?? null,
       isEmailConfirmed: true,
+      password: null,
+      birthday: null,
     };
+
+    const userData = user ? user : await this.userService.create(createUser);
+
+    const userDataTokens = await this.refreshTokenService.getTokens(
+      userData.id,
+      userData.email,
+    );
+
+    await this.refreshTokenService.create({
+      user: userData,
+      token: userDataTokens.refreshToken,
+    });
+
+    res.cookie(
+      'userData',
+      { ...userDataTokens, user: mapToUserProfile(userData) },
+      { maxAge: 3600000 },
+    );
+    res.redirect(`${this.configService.get('CLIENT_URL')}#/`);
   }
 
   logout(userId: number) {

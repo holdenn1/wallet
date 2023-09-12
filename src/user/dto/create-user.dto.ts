@@ -7,13 +7,15 @@ export class CreateUserDto {
   @Matches(/^(?!\s)[^\s].*$/, { message: 'Last name is a required field' })
   lastName: string;
 
-  photo: string;
-
   @IsString()
-  age: string;
+  birthday: string | null;
 
   @IsEmail()
   email: string;
+
+  @IsString()
+  @IsOptional()
+  photo: string | null;
 
   @Matches(/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{6,}$/, {
     message:
@@ -21,7 +23,7 @@ export class CreateUserDto {
       'Password must contain at least six characters.' +
       'Password must contain a letter, a number and one special character',
   })
-  password: string;
+  password: string | null;
 
   @IsOptional()
   isEmailConfirmed: boolean;

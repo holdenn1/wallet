@@ -19,16 +19,16 @@ export class User {
   @Column()
   lastName: string;
 
-  @Column()
+  @Column({nullable: true})
   photo: string;
 
-  @Column()
-  age: string;
+  @Column({nullable:true})
+  birthday: string;
 
   @Column({ unique: true })
   email: string;
 
-  @Column()
+  @Column({nullable:true})
   password: string;
 
   @Column({ default: 0 })

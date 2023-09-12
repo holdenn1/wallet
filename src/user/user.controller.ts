@@ -5,6 +5,7 @@ import {
   Post,
   UseInterceptors,
   UseGuards,
+  Get,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -18,5 +19,10 @@ export class UserController {
   @UseInterceptors(FileInterceptor('cover'))
   uploadAvatar(@Req() req, @UploadedFile() file: Express.Multer.File) {
     return this.userService.uploadAvatar(file, req.user.sub);
+  }
+
+  @Get('get-user')
+  getUser(@Req() req) {
+    return this.userService.findOneUserByEmail(req.user.email);
   }
 }
