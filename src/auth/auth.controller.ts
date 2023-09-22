@@ -52,6 +52,7 @@ export class AuthController {
   @Post('login')
   @UsePipes(new ValidationPipe())
   login(@Body() data: CreateAuthDto) {
+    
     return this.authService.login(data);
   }
 
@@ -68,8 +69,8 @@ export class AuthController {
   }
 
   @Get('verify/:id/:token')
-  async verify(@Response() res, @Param('token') token: string) {
-    const user = await this.authService.activate(token);
+  async verify(@Response() res,@Param('id') id: number, ) {
+    const user = await this.authService.activate(+id);
     if (user) {
       return res.redirect(`${this.configService.get('CLIENT_URL')}#/sign-in`);
     }

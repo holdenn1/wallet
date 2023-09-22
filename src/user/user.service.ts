@@ -32,10 +32,9 @@ export class UserService {
     });
   }
 
-  async confirmEmailAddress(link: string) {
+  async confirmEmailAddress(userId: number) {
     const user = await this.userRepository.findOne({
-      relations: { refreshTokens: true },
-      where: { refreshTokens: { refreshToken: link } },
+      where: { id: userId },
     });
     if (!user) {
       throw new BadRequestException('Uncorrected link');

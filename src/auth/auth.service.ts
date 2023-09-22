@@ -21,97 +21,115 @@ export class AuthService {
     createUserDto: CreateUserDto,
     userPhoto: Express.Multer.File,
   ): Promise<any> {
-    const userExists = await this.userService.findOneUserByEmail(
-      createUserDto.email,
-    );
-    if (userExists) {
-      throw new BadRequestException('User already exists');
+    try {
+      const userExists = await this.userService.findOneUserByEmail(
+        createUserDto.email,
+      );
+      if (userExists) {
+        throw new BadRequestException('User already exists');
+      }
+      const hash = await argon2.hash(createUserDto.password);
+
+      const avatar = await this.userService.uploadAvatar(userPhoto);
+
+      const userWithPhotoAndHashPassword = {
+        ...createUserDto,
+        password: hash,
+        photo: avatar,
+      };
+      const newUser = await this.userService.create(
+        userWithPhotoAndHashPassword,
+      );
+      const tokens = await this.refreshTokenService.getTokens(
+        newUser.id,
+        newUser.email,
+      );
+      await this.refreshTokenService.create({
+        user: newUser,
+        token: tokens.refreshToken,
+      });
+
+      const link = `${this.configService.get('BASE_URL')}/auth/verify/${
+        newUser.id
+      }/${tokens.refreshToken}`;
+
+      await this.verifyEmail(newUser.email, link);
+
+      return { ...tokens, user: mapToUserProfile(newUser) };
+    } catch {
+      throw new BadRequestException('An error occurred');
     }
-    const hash = await argon2.hash(createUserDto.password);
-
-    const avatar = await this.userService.uploadAvatar(userPhoto);
-
-    const userWithPhotoAndHashPassword = {
-      ...createUserDto,
-      password: hash,
-      photo: avatar,
-    };
-    const newUser = await this.userService.create(userWithPhotoAndHashPassword);
-    const tokens = await this.refreshTokenService.getTokens(
-      newUser.id,
-      newUser.email,
-    );
-    await this.refreshTokenService.create({
-      user: newUser,
-      token: tokens.refreshToken,
-    });
-
-    const link = `${this.configService.get('BASE_URL')}/auth/verify/${
-      newUser.id
-    }/${tokens.refreshToken}`;
-
-    await this.verifyEmail(newUser.email, link);
-
-    return { ...tokens, user: mapToUserProfile(newUser) };
   }
 
   async login(data: CreateAuthDto) {
-    const findUser = await this.userService.findOneUserByEmail(data.email);
-    if (!findUser) throw new BadRequestException('User does not exist');
-    const passwordMatches = await argon2.verify(
-      findUser.password,
-      data.password,
-    );
-    if (!passwordMatches)
-      throw new BadRequestException('Password is incorrect');
-    const tokens = await this.refreshTokenService.getTokens(
-      findUser.id,
-      findUser.email,
-    );
-    await this.refreshTokenService.create({
-      user: findUser,
-      token: tokens.refreshToken,
-    });
-    return { ...tokens, user: mapToUserProfile(findUser) };
+    try {
+      const findUser = await this.userService.findOneUserByEmail(data.email);
+      if (!findUser) throw new BadRequestException('User does not exist');
+      const passwordMatches = await argon2.verify(
+        findUser.password,
+        data.password,
+      );
+      if (!passwordMatches) {
+        throw new BadRequestException('Password is incorrect');
+      }
+
+      const tokens = await this.refreshTokenService.getTokens(
+        findUser.id,
+        findUser.email,
+      );
+      await this.refreshTokenService.create({
+        user: findUser,
+        token: tokens.refreshToken,
+      });
+      return { ...tokens, user: mapToUserProfile(findUser) };
+    } catch {
+      throw new BadRequestException('An error occurred');
+    }
   }
 
   async googleAuth(userDataFromGoogle: UserDataFromGoogle, res) {
-    if (!userDataFromGoogle) {
-      throw new BadRequestException('No user from google');
+    try {
+      if (!userDataFromGoogle) {
+        throw new BadRequestException('No user from google');
+      }
+
+      const user = await this.userService.findOneUserByEmail(
+        userDataFromGoogle.email,
+      );
+
+      const createGoogleUser: CreateUserDto = {
+        email: userDataFromGoogle.email,
+        firstName: userDataFromGoogle.firstName,
+        lastName: userDataFromGoogle.lastName,
+        photo: userDataFromGoogle.picture ?? null,
+        isEmailConfirmed: true,
+        password: null,
+        birthday: null,
+      };
+
+      const userData = user
+        ? user
+        : await this.userService.create(createGoogleUser);
+
+      const userDataTokens = await this.refreshTokenService.getTokens(
+        userData.id,
+        userData.email,
+      );
+
+      await this.refreshTokenService.create({
+        user: userData,
+        token: userDataTokens.refreshToken,
+      });
+
+      res.cookie(
+        'userData',
+        { ...userDataTokens, user: mapToUserProfile(userData) },
+        { maxAge: 3600000 },
+      );
+      res.redirect(`${this.configService.get('CLIENT_URL')}#/`);
+    } catch {
+      throw new BadRequestException('An error occurred');
     }
-
-    const user = await this.userService.findOneUserByEmail(
-      userDataFromGoogle.email,
-    );
-
-    const createUser: CreateUserDto = {
-      email: userDataFromGoogle.email,
-      firstName: userDataFromGoogle.firstName,
-      lastName: userDataFromGoogle.lastName,
-      photo: userDataFromGoogle.picture ?? null,
-      isEmailConfirmed: true,
-      password: null,
-      birthday: null,
-    };
-
-    const userData = user ? user : await this.userService.create(createUser);
-
-    const userDataTokens = await this.refreshTokenService.getTokens(
-      userData.id,
-      userData.email,
-    );
-
-    await this.refreshTokenService.create({
-      user: userData,
-      token: userDataTokens.refreshToken,
-    });
-
-    res.cookie(
-      'userData',
-      { ...userDataTokens, user: mapToUserProfile(userData) },
-      { maxAge: 3600000 },
-    );
-    res.redirect(`${this.configService.get('CLIENT_URL')}#/`);
   }
 
   logout(userId: number) {
@@ -123,10 +141,14 @@ export class AuthService {
   }
 
   async refreshTokensLogin(userData: UserRequest) {
-    const findUser = await this.userService.findOneUserById(userData.sub);
-    const tokens = await this.refreshTokens(userData);
-    const user = mapToUserProfile(findUser);
-    return { user, tokens };
+    try {
+      const findUser = await this.userService.findOneUserById(userData.sub);
+      const tokens = await this.refreshTokens(userData);
+      const user = mapToUserProfile(findUser);
+      return { user, tokens };
+    } catch {
+      throw new BadRequestException('An error occurred');
+    }
   }
 
   async verifyEmail(to: string, link: string) {
@@ -156,11 +178,11 @@ export class AuthService {
         `,
       });
     } catch (e) {
-      console.error(e);
+      throw new BadRequestException('An error occurred');
     }
   }
 
-  async activate(activationLink: string) {
-    return await this.userService.confirmEmailAddress(activationLink);
+  async activate(userId: number) {
+    return await this.userService.confirmEmailAddress(userId);
   }
 }
