@@ -52,7 +52,6 @@ export class AuthController {
   @Post('login')
   @UsePipes(new ValidationPipe())
   login(@Body() data: CreateAuthDto) {
-    
     return this.authService.login(data);
   }
 
@@ -69,7 +68,7 @@ export class AuthController {
   }
 
   @Get('verify/:id/:token')
-  async verify(@Response() res,@Param('id') id: number, ) {
+  async verify(@Response() res, @Param('id') id: number) {
     const user = await this.authService.activate(+id);
     if (user) {
       return res.redirect(`${this.configService.get('CLIENT_URL')}#/sign-in`);
@@ -80,5 +79,17 @@ export class AuthController {
   @UseGuards(RefreshTokenGuard)
   refreshTokensLogin(@Req() req) {
     return this.authService.refreshTokensLogin(req.user);
+  }
+
+  @Post('send/message/recover-password')
+  sendMessageForRecoverPassword(@Body() { email }: { email: string }) {
+    return this.authService.sendMessageForRecoverPassword(email);
+  }
+
+  @Post('recover/user-password')
+  recoverUserPassword(
+    @Body() { userId, password }: { userId: string; password: string },
+  ) {
+    return this.authService.recoverUserPassword(+userId, password);
   }
 }

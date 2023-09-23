@@ -48,6 +48,7 @@ export class UserService {
     user.firstName = dto.firstName ?? user.firstName;
     user.lastName = dto.lastName ?? user.lastName;
     user.photo = dto.photo ?? user.photo;
+    user.password = dto.password ?? user.password
     return this.userRepository.save({ ...user });
   }
 

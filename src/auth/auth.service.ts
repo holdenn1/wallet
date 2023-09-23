@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { CreateAuthDto } from './dto/create-auth.dto';
@@ -21,115 +25,108 @@ export class AuthService {
     createUserDto: CreateUserDto,
     userPhoto: Express.Multer.File,
   ): Promise<any> {
-    try {
-      const userExists = await this.userService.findOneUserByEmail(
-        createUserDto.email,
-      );
-      if (userExists) {
-        throw new BadRequestException('User already exists');
-      }
-      const hash = await argon2.hash(createUserDto.password);
-
-      const avatar = await this.userService.uploadAvatar(userPhoto);
-
-      const userWithPhotoAndHashPassword = {
-        ...createUserDto,
-        password: hash,
-        photo: avatar,
-      };
-      const newUser = await this.userService.create(
-        userWithPhotoAndHashPassword,
-      );
-      const tokens = await this.refreshTokenService.getTokens(
-        newUser.id,
-        newUser.email,
-      );
-      await this.refreshTokenService.create({
-        user: newUser,
-        token: tokens.refreshToken,
-      });
-
-      const link = `${this.configService.get('BASE_URL')}/auth/verify/${
-        newUser.id
-      }/${tokens.refreshToken}`;
-
-      await this.verifyEmail(newUser.email, link);
-
-      return { ...tokens, user: mapToUserProfile(newUser) };
-    } catch {
-      throw new BadRequestException('An error occurred');
+    const userExists = await this.userService.findOneUserByEmail(
+      createUserDto.email,
+    );
+    if (userExists) {
+      throw new BadRequestException('User already exists');
     }
+    const hash = await argon2.hash(createUserDto.password);
+
+    const avatar = await this.userService.uploadAvatar(userPhoto);
+
+    const userWithPhotoAndHashPassword = {
+      ...createUserDto,
+      password: hash,
+      photo: avatar,
+    };
+    const newUser = await this.userService.create(userWithPhotoAndHashPassword);
+    const tokens = await this.refreshTokenService.getTokens(
+      newUser.id,
+      newUser.email,
+    );
+    await this.refreshTokenService.create({
+      user: newUser,
+      token: tokens.refreshToken,
+    });
+
+    const link = `${this.configService.get('BASE_URL')}/auth/verify/${
+      newUser.id
+    }/${tokens.refreshToken}`;
+
+    await this.verifyEmail(newUser.email, link);
+
+    return { ...tokens, user: mapToUserProfile(newUser) };
   }
 
   async login(data: CreateAuthDto) {
-    try {
-      const findUser = await this.userService.findOneUserByEmail(data.email);
-      if (!findUser) throw new BadRequestException('User does not exist');
-      const passwordMatches = await argon2.verify(
-        findUser.password,
-        data.password,
-      );
-      if (!passwordMatches) {
-        throw new BadRequestException('Password is incorrect');
-      }
+    const findUser = await this.userService.findOneUserByEmail(data.email);
 
-      const tokens = await this.refreshTokenService.getTokens(
-        findUser.id,
-        findUser.email,
-      );
-      await this.refreshTokenService.create({
-        user: findUser,
-        token: tokens.refreshToken,
-      });
-      return { ...tokens, user: mapToUserProfile(findUser) };
-    } catch {
-      throw new BadRequestException('An error occurred');
+    if (!findUser) throw new BadRequestException('User does not exist');
+
+    if (!findUser.password) {
+      throw new ForbiddenException('The password is not correct');
     }
+
+    const passwordMatches = await argon2.verify(
+      findUser.password,
+      data.password,
+    );
+
+    if (!passwordMatches) {
+      throw new BadRequestException('Password is incorrect');
+    }
+
+    const tokens = await this.refreshTokenService.getTokens(
+      findUser.id,
+      findUser.email,
+    );
+    await this.refreshTokenService.create({
+      user: findUser,
+      token: tokens.refreshToken,
+    });
+    return { ...tokens, user: mapToUserProfile(findUser) };
   }
 
   async googleAuth(userDataFromGoogle: UserDataFromGoogle, res) {
-    try {
-      if (!userDataFromGoogle) {
-        throw new BadRequestException('No user from google');
-      }
-
-      const user = await this.userService.findOneUserByEmail(
-        userDataFromGoogle.email,
-      );
-
-      const createGoogleUser: CreateUserDto = {
-        email: userDataFromGoogle.email,
-        firstName: userDataFromGoogle.firstName,
-        lastName: userDataFromGoogle.lastName,
-        photo: userDataFromGoogle.picture ?? null,
-        isEmailConfirmed: true,
-        password: null,
-        birthday: null,
-      };
-
-      const userData = user
-        ? user
-        : await this.userService.create(createGoogleUser);
-
-      const userDataTokens = await this.refreshTokenService.getTokens(
-        userData.id,
-        userData.email,
-      );
-
-      await this.refreshTokenService.create({
-        user: userData,
-        token: userDataTokens.refreshToken,
-      });
-
-      res.cookie(
-        'userData',
-        { ...userDataTokens, user: mapToUserProfile(userData) },
-        { maxAge: 3600000 },
-      );
-      res.redirect(`${this.configService.get('CLIENT_URL')}#/`);
-    } catch {
-      throw new BadRequestException('An error occurred');
+    if (!userDataFromGoogle) {
+      throw new BadRequestException('No user from google');
     }
+
+    const user = await this.userService.findOneUserByEmail(
+      userDataFromGoogle.email,
+    );
+
+    const createGoogleUser: CreateUserDto = {
+      email: userDataFromGoogle.email,
+      firstName: userDataFromGoogle.firstName,
+      lastName: userDataFromGoogle.lastName,
+      photo: userDataFromGoogle.picture ?? null,
+      isEmailConfirmed: true,
+      password: null,
+      birthday: null,
+    };
+
+    const userData = user
+      ? user
+      : await this.userService.create(createGoogleUser);
+
+    const userDataTokens = await this.refreshTokenService.getTokens(
+      userData.id,
+      userData.email,
+    );
+
+    await this.refreshTokenService.create({
+      user: userData,
+      token: userDataTokens.refreshToken,
+    });
+
+    res.cookie(
+      'userData',
+      { ...userDataTokens, user: mapToUserProfile(userData) },
+      { maxAge: 3600000 },
+    );
+    res.redirect(`${this.configService.get('CLIENT_URL')}#/`);
   }
 
   logout(userId: number) {
@@ -182,7 +179,56 @@ export class AuthService {
     }
   }
 
+  async sendMessageForRecoverPassword(userEmail: string) {
+    const user = await this.userService.findOneUserByEmail(userEmail);
+    if (!user) {
+      throw new BadRequestException('User does not exist');
+    }
+    const transporter = nodemailer.createTransport({
+      host: this.configService.get('EMAIL_HOST'),
+      port: this.configService.get('EMAIL_PORT'),
+      service: 'gmail',
+      secure: true,
+      auth: {
+        user: this.configService.get('EMAIL_USER'),
+        pass: this.configService.get('EMAIL_PASS'),
+      },
+      from: this.configService.get('EMAIL_USER'),
+    });
+
+    await transporter.sendMail({
+      from: this.configService.get('EMAIL_USER'),
+      to: userEmail,
+      subject: 'Recover password',
+      text: '',
+      html: `
+      <div>
+        <h1>For recover password, follow the link</h1>
+        <h3><a href='${this.configService.get(
+          'CLIENT_URL',
+        )}#/recover-password/${user.id}'>Recover password</a></h3> 
+      </div>
+      `,
+    });
+  }
+
   async activate(userId: number) {
     return await this.userService.confirmEmailAddress(userId);
+  }
+
+  async recoverUserPassword(userId: number, password: string) {
+    const user = this.userService.findOneUserById(userId);
+    
+    if (!user) {
+      throw new BadRequestException('User does not exist');
+    }
+
+    const hashPassword = await argon2.hash(password);
+
+    const updatedUser = await this.userService.updateUser(userId, {
+      password: hashPassword,
+    });
+
+    return mapToUserProfile(updatedUser);
   }
 }
