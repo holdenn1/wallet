@@ -6,18 +6,21 @@ import {
 import { UserService } from '../user/user.service';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { CreateAuthDto } from './dto/create-auth.dto';
-import { UserDataFromGoogle, UserRequest } from './types';
+import { DecodedToken, UserDataFromGoogle, UserRequest } from './types';
 import { mapToUserProfile } from './mappers';
 import { RefreshTokenService } from './refreshToken.service';
 import * as argon2 from 'argon2';
 import * as nodemailer from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { User } from 'src/user/entities/user.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
     private userService: UserService,
     private refreshTokenService: RefreshTokenService,
+    private jwtService: JwtService,
     private configService: ConfigService,
   ) {}
 
@@ -41,18 +44,12 @@ export class AuthService {
       photo: avatar,
     };
     const newUser = await this.userService.create(userWithPhotoAndHashPassword);
-    const tokens = await this.refreshTokenService.getTokens(
-      newUser.id,
-      newUser.email,
-    );
-    await this.refreshTokenService.create({
-      user: newUser,
-      token: tokens.refreshToken,
-    });
+
+    const tokens = await this.generateTokens(newUser);
 
     const link = `${this.configService.get('BASE_URL')}/auth/verify/${
       newUser.id
-    }/${tokens.refreshToken}`;
+    }/${tokens.accessToken}`;
 
     await this.verifyEmail(newUser.email, link);
 
@@ -77,14 +74,8 @@ export class AuthService {
       throw new BadRequestException('Password is incorrect');
     }
 
-    const tokens = await this.refreshTokenService.getTokens(
-      findUser.id,
-      findUser.email,
-    );
-    await this.refreshTokenService.create({
-      user: findUser,
-      token: tokens.refreshToken,
-    });
+    const tokens = await this.generateTokens(findUser);
+
     return { ...tokens, user: mapToUserProfile(findUser) };
   }
 
@@ -111,19 +102,11 @@ export class AuthService {
       ? user
       : await this.userService.create(createGoogleUser);
 
-    const userDataTokens = await this.refreshTokenService.getTokens(
-      userData.id,
-      userData.email,
-    );
-
-    await this.refreshTokenService.create({
-      user: userData,
-      token: userDataTokens.refreshToken,
-    });
+    const tokens = await this.generateTokens(userData);
 
     res.cookie(
       'userData',
-      { ...userDataTokens, user: mapToUserProfile(userData) },
+      { ...tokens, user: mapToUserProfile(userData) },
       { maxAge: 3600000 },
     );
     res.redirect(`${this.configService.get('CLIENT_URL')}#/`);
@@ -184,6 +167,9 @@ export class AuthService {
     if (!user) {
       throw new BadRequestException('User does not exist');
     }
+
+    const tokens = await this.generateTokens(user);
+
     const transporter = nodemailer.createTransport({
       host: this.configService.get('EMAIL_HOST'),
       port: this.configService.get('EMAIL_PORT'),
@@ -206,29 +192,65 @@ export class AuthService {
         <h1>For recover password, follow the link</h1>
         <h3><a href='${this.configService.get(
           'CLIENT_URL',
-        )}#/recover-password/${user.id}'>Recover password</a></h3> 
+        )}#/recover-password?token=${
+          tokens.accessToken
+        }'>Recover password</a></h3> 
       </div>
       `,
     });
   }
 
-  async activate(userId: number) {
-    return await this.userService.confirmEmailAddress(userId);
+  async activate(token: string) {
+    const decodedToken = this.jwtService.decode(token) as DecodedToken;
+
+    if (!decodedToken.email || !decodedToken.sub) {
+      throw new BadRequestException('Token is invalid');
+    }
+
+    const user = await this.userService.findOneUserByEmail(decodedToken.email);
+
+    if (!user) {
+      throw new BadRequestException('Uncorrected link');
+    }
+
+    return await this.userService.updateUser(decodedToken.sub, {
+      isEmailConfirmed: true,
+    });
   }
 
-  async recoverUserPassword(userId: number, password: string) {
-    const user = this.userService.findOneUserById(userId);
-    
+  async recoverUserPassword(token: string, password: string) {
+    const decodedToken = this.jwtService.decode(token) as DecodedToken;
+
+    if (!decodedToken.email || !decodedToken.sub) {
+      throw new BadRequestException('Token is invalid');
+    }
+
+    const user = this.userService.findOneUserByEmail(decodedToken.email);
+
     if (!user) {
       throw new BadRequestException('User does not exist');
     }
 
     const hashPassword = await argon2.hash(password);
 
-    const updatedUser = await this.userService.updateUser(userId, {
+    const updatedUser = await this.userService.updateUser(decodedToken.sub, {
       password: hashPassword,
     });
 
     return mapToUserProfile(updatedUser);
+  }
+
+  async generateTokens(user: User) {
+    const tokens = await this.refreshTokenService.getTokens(
+      user.id,
+      user.email,
+    );
+
+    await this.refreshTokenService.create({
+      user,
+      token: tokens.refreshToken,
+    });
+
+    return tokens;
   }
 }

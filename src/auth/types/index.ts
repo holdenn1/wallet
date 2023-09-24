@@ -3,6 +3,8 @@ export type JwtPayload = {
   email: string;
 };
 
+export type DecodedToken = JwtPayload & {[key: string]: any;}
+
 export type UserRequest = JwtPayload & {
   refreshToken?: string;
   [key: string]: any;

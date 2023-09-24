@@ -68,8 +68,8 @@ export class AuthController {
   }
 
   @Get('verify/:id/:token')
-  async verify(@Response() res, @Param('id') id: number) {
-    const user = await this.authService.activate(+id);
+  async verify(@Response() res, @Param('token') token: string) {
+    const user = await this.authService.activate(token);
     if (user) {
       return res.redirect(`${this.configService.get('CLIENT_URL')}#/sign-in`);
     }
@@ -88,8 +88,8 @@ export class AuthController {
 
   @Post('recover/user-password')
   recoverUserPassword(
-    @Body() { userId, password }: { userId: string; password: string },
+    @Body() { token, password }: { token: string; password: string },
   ) {
-    return this.authService.recoverUserPassword(+userId, password);
+    return this.authService.recoverUserPassword(token, password);
   }
 }

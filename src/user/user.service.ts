@@ -32,16 +32,6 @@ export class UserService {
     });
   }
 
-  async confirmEmailAddress(userId: number) {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-    });
-    if (!user) {
-      throw new BadRequestException('Uncorrected link');
-    }
-    user.isEmailConfirmed = true;
-    return await this.userRepository.save(user);
-  }
 
   async updateUser(id: number, dto: Partial<UpdateUserDto>) {
     const user = await this.findOneUserById(id);
@@ -49,6 +39,7 @@ export class UserService {
     user.lastName = dto.lastName ?? user.lastName;
     user.photo = dto.photo ?? user.photo;
     user.password = dto.password ?? user.password
+    user.isEmailConfirmed = dto.isEmailConfirmed ?? user.isEmailConfirmed
     return this.userRepository.save({ ...user });
   }
 
