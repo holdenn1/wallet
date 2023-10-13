@@ -1,4 +1,3 @@
-import { RefreshToken } from 'src/auth/entities/refresh-token.entity';
 import {
   Column,
   CreateDateColumn,
@@ -7,6 +6,8 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { RefreshToken } from '@/auth/entities/refresh-token.entity';
+import { CreditCard } from './creditCard.entity';
 
 @Entity({ name: 'app_user' })
 export class User {
@@ -19,20 +20,23 @@ export class User {
   @Column()
   lastName: string;
 
-  @Column({nullable: true})
+  @Column({ nullable: true })
   photo: string;
 
-  @Column({nullable:true})
+  @Column({ nullable: true })
   birthday: string;
 
   @Column({ unique: true })
   email: string;
 
-  @Column({nullable:true})
+  @Column({ nullable: true })
   password: string;
 
   @Column({ default: 0 })
-  cash: string;
+  cash: number;
+
+  @OneToMany(() => CreditCard, (creditCard) => creditCard.user, { nullable: true })
+  creditCard: CreditCard[];
 
   @Column({ default: false })
   isEmailConfirmed: boolean;

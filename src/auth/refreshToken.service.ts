@@ -3,7 +3,7 @@ import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { ForbiddenException } from '@nestjs/common';
-import { UserRequest } from '../auth/types';
+import { UserRequest } from '@/auth/types';
 import { CreateTokenDto } from './dto/create-token.dto';
 import { RefreshToken } from './entities/refresh-token.entity';
 

@@ -1,6 +1,5 @@
-import {CategoryType} from "../../categories/types";
+import {CategoryType} from "@/categories/types";
 import {IsOptional, IsString} from "class-validator";
-import {Category} from "../../categories/entities/category.entity";
 
 export class CreateSubcategoryDto {
     @IsString()

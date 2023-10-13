@@ -1,12 +1,6 @@
-import {
-  Column,
-  Entity,
-  ManyToMany,
-  PrimaryGeneratedColumn,
-  JoinTable, OneToMany,
-} from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 import { CategoryType } from '../types';
-import { Subcategory } from '../../subcategories/entities/subcategory.entity';
+import { Subcategory } from '@/subcategories/entities/subcategory.entity';
 
 @Entity()
 export class Category {
@@ -25,6 +19,6 @@ export class Category {
   @Column()
   categoryIconBackground: string;
 
-  @OneToMany(() => Subcategory, subcategory => subcategory.category)
+  @OneToMany(() => Subcategory, (subcategory) => subcategory.category)
   subcategories: Subcategory[];
 }

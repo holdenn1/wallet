@@ -1,4 +1,4 @@
-import { User } from 'src/user/entities/user.entity';
+import {User} from "@/user/entities/user.entity";
 
 export const mapToUserProfile = (user: User): any => ({
   id: user.id,

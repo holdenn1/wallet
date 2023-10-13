@@ -1,12 +1,7 @@
-import {
-  Column,
-  Entity,
-
-  ManyToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
-import { CategoryType } from '../../categories/types';
-import { Category } from '../../categories/entities/category.entity';
+import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { CategoryType } from '@/categories/types';
+import { Category } from '@/categories/entities/category.entity';
+import { Transaction } from '@/transactions/entities/transaction.entity';
 
 @Entity()
 export class Subcategory {
@@ -27,4 +22,7 @@ export class Subcategory {
 
   @ManyToOne(() => Category, (category) => category.subcategories)
   category: Category;
+
+  @OneToMany(() => Transaction, (transaction) => transaction.subcategory)
+  transaction: Transaction[];
 }
