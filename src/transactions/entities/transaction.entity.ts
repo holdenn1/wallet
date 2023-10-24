@@ -6,8 +6,9 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { PaymentMethod } from '../types';
-import { CategoryType } from '@/categories/types';
+import { PaymentMethod, TypeOperation } from '../types';
+import { Category } from '@/categories/entities/category.entity';
+import { User } from '@/user/entities/user.entity';
 import { Subcategory } from '@/subcategories/entities/subcategory.entity';
 
 @Entity()
@@ -15,8 +16,8 @@ export class Transaction {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'enum', enum: CategoryType })
-  type: CategoryType;
+  @Column({ type: 'enum', enum: TypeOperation })
+  type: TypeOperation;
 
   @Column({ type: 'enum', enum: PaymentMethod })
   paymentMethod: PaymentMethod;
@@ -30,8 +31,14 @@ export class Transaction {
   @Column({ nullable: true })
   description: string;
 
-  @ManyToOne(() => Subcategory, (subcategory) => subcategory.transaction)
+  @ManyToOne(() => Category, (category) => category.transaction)
+  category: Category;
+
+  @ManyToOne(() => Subcategory, (subcategory) => subcategory.transaction, { nullable: true })
   subcategory: Subcategory;
+
+  @ManyToOne(() => User, (user) => user.transactions)
+  user: User;
 
   @CreateDateColumn()
   createAt: Date;

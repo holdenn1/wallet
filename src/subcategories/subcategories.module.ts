@@ -9,5 +9,6 @@ import {CategoriesModule} from "@/categories/categories.module";
   imports: [TypeOrmModule.forFeature([Subcategory]), CategoriesModule],
   controllers: [SubcategoriesController],
   providers: [SubcategoriesService],
+  exports: [SubcategoriesService]
 })
 export class SubcategoriesModule {}

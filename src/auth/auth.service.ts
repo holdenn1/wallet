@@ -213,9 +213,11 @@ export class AuthService {
       throw new BadRequestException('Uncorrected link');
     }
 
-    return await this.userService.updateUser(decodedToken.sub, {
+    const updatedUser =  await this.userService.updateUser(decodedToken.sub, {
       isEmailConfirmed: true,
     });
+
+    return mapToUserProfile(updatedUser)
   }
 
   async recoverUserPassword(token: string, password: string) {

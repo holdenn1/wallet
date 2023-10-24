@@ -9,7 +9,6 @@ export class SubcategoriesController {
 
   @Post('create')
   create(@Body() createSubcategoryDto: CreateSubcategoryDto) {
-    console.log(createSubcategoryDto)
     return this.subcategoriesService.create(createSubcategoryDto);
   }
 

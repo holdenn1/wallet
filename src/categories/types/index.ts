@@ -1,7 +1,11 @@
 export enum CategoryType {
   COST = 'cost',
   INCOME = 'income',
+  TRANSFER = 'transfer',
+  OTHER = 'other'
 }
+
+
 
 type Category = {
   type: CategoryType;
@@ -18,15 +22,9 @@ type Subcategory = {
   subcategoryIconBackground: string;
 };
 
-type CostCategory = Category;
-type IncomeCategory = Omit<Category, 'subcategories'>;
 
 export type CategoriesSortedByType = {
   cost: Category[];
   income: Category[];
 };
 
-export type MappedCategoriesByType = {
-  cost: CostCategory[];
-  income: IncomeCategory[];
-}

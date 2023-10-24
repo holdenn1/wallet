@@ -1,6 +1,7 @@
-import {User} from "@/user/entities/user.entity";
+import { User } from '@/user/entities/user.entity';
+import { UserToProfile } from '@/user/types';
 
-export const mapToUserProfile = (user: User): any => ({
+export const mapToUserProfile = (user: User): UserToProfile => ({
   id: user.id,
   firstName: user.firstName,
   lastName: user.lastName,
@@ -8,5 +9,7 @@ export const mapToUserProfile = (user: User): any => ({
   photo: user.photo,
   birthday: user.birthday,
   cash: user.cash,
+  creditCard: user.creditCard,
   isEmailConfirmed: user.isEmailConfirmed,
 });
+

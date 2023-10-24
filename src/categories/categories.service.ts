@@ -5,7 +5,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Category } from './entities/category.entity';
 import { Repository } from 'typeorm';
 import { CategoriesSortedByType } from './types';
-import { mapCategoriesBeforeSendClient } from './mappers';
 
 @Injectable()
 export class CategoriesService {
@@ -13,6 +12,7 @@ export class CategoriesService {
     @InjectRepository(Category)
     private categoryRepository: Repository<Category>,
   ) {}
+  
   async create(createCategoryDto: CreateCategoryDto) {
     return await this.categoryRepository.save(createCategoryDto);
   }
@@ -37,6 +37,6 @@ export class CategoriesService {
       return acum;
     }, {}) as CategoriesSortedByType;
 
-    return mapCategoriesBeforeSendClient(sortedCategoriesByType);
+    return sortedCategoriesByType;
   }
 }

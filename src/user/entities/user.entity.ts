@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { RefreshToken } from '@/auth/entities/refresh-token.entity';
 import { CreditCard } from './creditCard.entity';
+import { Transaction } from '@/transactions/entities/transaction.entity';
 
 @Entity({ name: 'app_user' })
 export class User {
@@ -43,6 +44,9 @@ export class User {
 
   @OneToMany(() => RefreshToken, (token) => token.user)
   refreshTokens: RefreshToken[];
+
+  @OneToMany(() => Transaction, (transaction) => transaction.user)
+  transactions: Transaction[];
 
   @CreateDateColumn()
   createAt: Date;

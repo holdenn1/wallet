@@ -1,6 +1,10 @@
 export enum PaymentMethod {
-    MONOBANK  = 'monobank',
-    PRIVAT_BANK  = 'privat-bank',
-    OSCHADBANK = 'oschadbank',
+    CREDIT_CARD = 'credit-card',
     CASH = 'cash'
+}
+
+export enum TypeOperation {
+    COST = 'cost',
+    INCOME = 'income',
+    TRANSFER = 'transfer',
 }
