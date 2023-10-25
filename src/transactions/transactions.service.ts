@@ -1,8 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
-import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { CategoryType } from '@/categories/types';
-import { TypeOperation } from './types';
 import { UserService } from '@/user/user.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Transaction } from './entities/transaction.entity';
@@ -21,43 +19,60 @@ export class TransactionsService {
   ) {}
 
   async createTransaction(userId: number, createTransactionDto: CreateTransactionDto) {
-    const { amount, bank, paymentMethod, typeOperation } = createTransactionDto;
-    const userData = await this.userService.updateUserBalance(
-      userId,
-      +amount,
-      paymentMethod,
-      bank,
-      typeOperation,
-    );
-    if (!userData) {
-      throw new BadRequestException('Something went wrong');
-    }
+   
+      const { amount, bank, paymentMethod, typeOperation, category, subcategory } = createTransactionDto;
 
-    const user = await this.userService.findOneUserById(userId);
+      const foundCategory = await this.categoryService.findCategoryByName(category);
 
-    if (!user) {
-      throw new BadRequestException('User not found');
-    }
+      if (!foundCategory) {
+        throw new BadRequestException(`Category - ${createTransactionDto.category} not found`);
+      }
 
-    const category = await this.categoryService.findCategoryByName(createTransactionDto.category);
 
-    if (!category) {
-      throw new BadRequestException(`Category - ${createTransactionDto.category} not found`);
-    }
+      if (
+        foundCategory.type !== (typeOperation as unknown as CategoryType) &&
+        foundCategory.type !== 'other'
+      ) {
+        throw new BadRequestException('This category does not exist in the category list');
+      }
 
-    const subcategory = createTransactionDto.subcategory.length
-      ? await this.subcategoryService.findSubcategoryByName(createTransactionDto.subcategory)
-      : null;
+      if (foundCategory.type === 'other' && typeOperation === 'transfer') {
+        throw new BadRequestException('Category other does not exist in the transfer list');
+      }
 
-    return await this.transactionRepository.save({
-      type: typeOperation,
-      paymentMethod,
-      amount: +amount,
-      recipient: createTransactionDto.recipient,
-      description: createTransactionDto.description,
-      category,
-      subcategory,
-      user,
-    });
+      const foundSubcategory = subcategory.length
+        ? await this.subcategoryService.findSubcategoryByName(subcategory, category)
+        : null;
+
+      const userData = await this.userService.updateUserBalance({
+        amount: +amount,
+        paymentMethod,
+        typeOperation,
+        bank,
+        userId,
+      });
+
+      if (!userData) {
+        throw new BadRequestException('Something went wrong');
+      }
+
+      const user = await this.userService.findOneUserById(userId);
+
+      if (!user) {
+        throw new BadRequestException('User not found');
+      }
+console.log(121241);
+
+      return await this.transactionRepository.save({
+        type: typeOperation,
+        paymentMethod,
+        amount: +amount,
+        recipient: createTransactionDto.recipient,
+        description: createTransactionDto.description,
+        category: foundCategory,
+        subcategory: foundSubcategory,
+        user,
+      });
+    
   }
 }

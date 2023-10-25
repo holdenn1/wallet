@@ -8,6 +8,11 @@ import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
 import { storage } from 'src/firebase';
 import { PaymentMethod, TypeOperation } from '@/transactions/types';
 import { CreditCard } from './entities/creditCard.entity';
+import {
+  UpdateUserBalanceDataType,
+  UpdateUserCashBalanceData,
+  UpdateUserCreditCardBalanceData,
+} from './types';
 
 @Injectable()
 export class UserService {
@@ -64,31 +69,26 @@ export class UserService {
     return downloadURL;
   }
 
-  async updateUserBalance(
-    userId: number,
-    amount: number,
-    paymentMethod: PaymentMethod,
-    bank: string,
-    typeOperation: TypeOperation,
-  ) {
+  async updateUserBalance(data: UpdateUserBalanceDataType) {
+    const { amount, bank, paymentMethod, typeOperation, userId } = data;
     if (paymentMethod === PaymentMethod.CASH) {
-      return await this.updateUserCash(userId, typeOperation, amount);
+      return await this.updateUserCash({ amount, typeOperation, userId });
     }
     if (paymentMethod === PaymentMethod.CREDIT_CARD) {
-      return await this.updateUserBalance(userId, amount, paymentMethod, bank, typeOperation);
+      return await this.updateUserCreditCardBalance({ amount, typeOperation, userId, bank });
     }
   }
 
-  async updateUserCash(userId: number, operationType: TypeOperation, amount: number) {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-    });
+  async updateUserCash(data: UpdateUserCashBalanceData) {
+    const { userId, amount, typeOperation } = data;
+
+    const user = await this.findOneUserById(userId);
 
     if (!user) {
       throw new BadRequestException('User not found');
     }
 
-    switch (operationType) {
+    switch (typeOperation) {
       case TypeOperation.COST: {
         if (user.cash < amount) {
           throw new BadRequestException('Insufficient funds');
@@ -109,17 +109,14 @@ export class UserService {
       }
 
       default: {
-        return operationType;
+      
+        throw new BadRequestException(`${typeOperation} operation type not found`);
       }
     }
   }
 
-  async updateUserCreditCardBalance(
-    userId: number,
-    amount: number,
-    bank: string,
-    operationType: TypeOperation,
-  ) {
+  async updateUserCreditCardBalance(data: UpdateUserCreditCardBalanceData) {
+    const { userId, bank, amount, typeOperation } = data;
     const creditCard = await this.creditCardRepository.findOne({
       relations: { user: true },
       where: { user: { id: userId }, bankName: bank },
@@ -129,7 +126,7 @@ export class UserService {
       throw new BadRequestException('Credit card not found');
     }
 
-    switch (operationType) {
+    switch (typeOperation) {
       case TypeOperation.COST: {
         if (creditCard.balance < amount) {
           throw new BadRequestException('Insufficient funds');
@@ -150,7 +147,7 @@ export class UserService {
       }
 
       default: {
-        return operationType;
+        throw new BadRequestException(`${typeOperation} operation type not found`);
       }
     }
   }

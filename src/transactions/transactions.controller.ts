@@ -1,4 +1,17 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Req,
+  BadRequestException,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
@@ -9,6 +22,7 @@ export class TransactionsController {
   constructor(private readonly transactionsService: TransactionsService) {}
 
   @Post('create')
+  @UsePipes(new ValidationPipe())
   @UseGuards(AccessTokenGuard)
   async create(@Req() res, @Body() createTransactionDto: CreateTransactionDto) {
     return await this.transactionsService.createTransaction(+res.user.sub, createTransactionDto);

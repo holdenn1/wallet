@@ -18,9 +18,11 @@ export class CreateTransactionDto {
   paymentMethod: PaymentMethod;
 
   @IsString()
+  @IsOptional()
   description: string;
 
   @IsString()
+  @IsOptional()
   recipient: string;
 
   @IsString()

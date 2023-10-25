@@ -32,7 +32,10 @@ export class SubcategoriesService {
     return this.subcategoryRepository.save(subcategory);
   }
 
-  async findSubcategoryByName(name: string) {
-    return await this.subcategoryRepository.findOne({ where: { subcategory: name } });
+  async findSubcategoryByName(subcategory: string, category: string) {
+    return await this.subcategoryRepository.findOne({
+      relations: { category: true },
+      where: { subcategory, category: { category } },
+    });
   }
 }
