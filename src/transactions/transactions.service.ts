@@ -147,5 +147,26 @@ export class TransactionsService {
     } as CreateTransactionDto);
   }
 
-  async changeBalance(data: UpdateBalanceData) {}
+  async changeBalance(data: UpdateBalanceData) {
+    const { correctBalance, balanceType, bankName, userId } = data;
+    switch (balanceType) {
+      case BalanceType.CASH: {
+        return await this.changeCashBalance(userId, correctBalance);
+      }
+      case BalanceType.CARD: {
+        return await this.changeCardBalance(userId, correctBalance, bankName);
+      }
+      default: {
+        throw new BadRequestException(`Type ${balanceType} does not exist`);
+      }
+    }
+  }
+
+  async changeCashBalance(userId: number, correctBalance: number) {
+    return await this.userService.updateUser(userId, { cash: correctBalance });
+  }
+
+  async changeCardBalance(userId: number, correctBalance: number, bankName: Banks) {
+    return await this.userService.updateCreditCardBalance(userId, bankName, correctBalance);
+  }
 }

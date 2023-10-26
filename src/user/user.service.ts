@@ -71,8 +71,16 @@ export class UserService {
     user.photo = dto.photo ?? user.photo;
     user.password = dto.password ?? user.password;
     user.isEmailConfirmed = dto.isEmailConfirmed ?? user.isEmailConfirmed;
-    // user.cash = dto.cash ?? user.cash //!don't forget about updateUserDto
-    return this.userRepository.save({ ...user });
+    user.cash = dto.cash ?? user.cash;
+    return this.userRepository.save(user);
+  }
+
+  async updateCreditCardBalance(userId: number, bankName: Banks, currentBalance: number) {
+    const creditCard = await this.getUserCreditCard(userId, bankName);
+
+    creditCard.balance = currentBalance ?? creditCard.balance;
+
+    return await this.creditCardRepository.save(creditCard);
   }
 
   async uploadAvatar(cover: Express.Multer.File, userId?: number) {
@@ -196,6 +204,5 @@ export class UserService {
         typeOperation: TypeOperation.INCOME,
       });
     }
-
   }
 }
