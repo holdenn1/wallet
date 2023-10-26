@@ -9,10 +9,12 @@ import { storage } from 'src/firebase';
 import { PaymentMethod, TypeOperation } from '@/transactions/types';
 import { CreditCard } from './entities/creditCard.entity';
 import {
+  Banks,
   UpdateUserBalanceDataType,
   UpdateUserCashBalanceData,
   UpdateUserCreditCardBalanceData,
 } from './types';
+import { CreateCreditCardDto } from './dto/create-credit-card.dto';
 
 @Injectable()
 export class UserService {
@@ -109,14 +111,16 @@ export class UserService {
       }
 
       default: {
-      
-        throw new BadRequestException(`${typeOperation} operation type not found`);
+        return null;
       }
     }
   }
 
   async updateUserCreditCardBalance(data: UpdateUserCreditCardBalanceData) {
     const { userId, bank, amount, typeOperation } = data;
+
+    this.checkIsBankExist(bank)
+
     const creditCard = await this.creditCardRepository.findOne({
       relations: { user: true },
       where: { user: { id: userId }, bankName: bank },
@@ -149,6 +153,32 @@ export class UserService {
       default: {
         throw new BadRequestException(`${typeOperation} operation type not found`);
       }
+    }
+  }
+
+  async addCreditCard(userId: number, { balance, bankName }: CreateCreditCardDto) {
+    const user = await this.findOneUserById(userId);
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    this.checkIsBankExist(bankName)
+
+    const bank = await this.creditCardRepository.findOne({ where: { bankName } });
+
+    if (bank) {
+      throw new BadRequestException(`Credit card ${bankName} already exist`);
+    }
+
+    return await this.creditCardRepository.save({ balance: +balance, bankName, user });
+  }
+
+  checkIsBankExist(bankName: string) {
+    const BANKS = ['MonoBank', 'OschadBank', 'PrivatBank'];
+
+    if (!BANKS.includes(bankName)) {
+      throw new BadRequestException(`${bankName} is not supported`);
     }
   }
 }

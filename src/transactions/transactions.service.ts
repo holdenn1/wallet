@@ -18,61 +18,54 @@ export class TransactionsService {
     private subcategoryService: SubcategoriesService,
   ) {}
 
-  async createTransaction(userId: number, createTransactionDto: CreateTransactionDto) {
-   
-      const { amount, bank, paymentMethod, typeOperation, category, subcategory } = createTransactionDto;
+  async createTransaction(userId: number, dto: CreateTransactionDto) {
+    const { amount, bank, paymentMethod, typeOperation, category, subcategory } = dto;
 
-      const foundCategory = await this.categoryService.findCategoryByName(category);
+    const foundCategory = await this.categoryService.findCategoryByName(category);
 
-      if (!foundCategory) {
-        throw new BadRequestException(`Category - ${createTransactionDto.category} not found`);
-      }
+    if (!foundCategory) {
+      throw new BadRequestException(`Category - ${dto.category} not found`);
+    }
 
+    if (foundCategory.type !== (typeOperation as unknown as CategoryType) && foundCategory.type !== 'other') {
+      throw new BadRequestException('This category does not exist in the category list');
+    }
 
-      if (
-        foundCategory.type !== (typeOperation as unknown as CategoryType) &&
-        foundCategory.type !== 'other'
-      ) {
-        throw new BadRequestException('This category does not exist in the category list');
-      }
+    if (foundCategory.type === 'other' && typeOperation === 'transfer') {
+      throw new BadRequestException('Category other does not exist in the transfer list');
+    }
 
-      if (foundCategory.type === 'other' && typeOperation === 'transfer') {
-        throw new BadRequestException('Category other does not exist in the transfer list');
-      }
+    const foundSubcategory = subcategory.length
+      ? await this.subcategoryService.findSubcategoryByName(subcategory, category)
+      : null;
 
-      const foundSubcategory = subcategory.length
-        ? await this.subcategoryService.findSubcategoryByName(subcategory, category)
-        : null;
+    const userData = await this.userService.updateUserBalance({
+      amount: +amount,
+      paymentMethod,
+      typeOperation,
+      bank,
+      userId,
+    });
 
-      const userData = await this.userService.updateUserBalance({
-        amount: +amount,
-        paymentMethod,
-        typeOperation,
-        bank,
-        userId,
-      });
+    if (!userData) {
+      throw new BadRequestException('Something went wrong');
+    }
 
-      if (!userData) {
-        throw new BadRequestException('Something went wrong');
-      }
+    const user = await this.userService.findOneUserById(userId);
 
-      const user = await this.userService.findOneUserById(userId);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
 
-      if (!user) {
-        throw new BadRequestException('User not found');
-      }
-console.log(121241);
-
-      return await this.transactionRepository.save({
-        type: typeOperation,
-        paymentMethod,
-        amount: +amount,
-        recipient: createTransactionDto.recipient,
-        description: createTransactionDto.description,
-        category: foundCategory,
-        subcategory: foundSubcategory,
-        user,
-      });
-    
+    return await this.transactionRepository.save({
+      type: typeOperation,
+      paymentMethod,
+      amount: +amount,
+      recipient: dto.recipient,
+      description: dto.description,
+      category: foundCategory,
+      subcategory: foundSubcategory,
+      user,
+    });
   }
 }

@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateSubcategoryDto } from './dto/create-subcategory.dto';
-import { UpdateSubcategoryDto } from './dto/update-subcategory.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Subcategory } from './entities/subcategory.entity';
 import { Repository } from 'typeorm';
@@ -14,17 +13,17 @@ export class SubcategoriesService {
 
     private categoryService: CategoriesService,
   ) {}
-  async create(createSubcategoryDto: CreateSubcategoryDto) {
+  async create(dto: CreateSubcategoryDto) {
     const subcategory = new Subcategory();
-    subcategory.type = createSubcategoryDto.type;
-    subcategory.subcategory = createSubcategoryDto.subcategory;
-    subcategory.subcategoryIcon = createSubcategoryDto.subcategoryIcon;
-    subcategory.subcategoryIconBackground = createSubcategoryDto.subcategoryIconBackground;
+    subcategory.type = dto.type;
+    subcategory.subcategory = dto.subcategory;
+    subcategory.subcategoryIcon = dto.subcategoryIcon;
+    subcategory.subcategoryIconBackground = dto.subcategoryIconBackground;
 
-    const category = await this.categoryService.findCategoryByName(createSubcategoryDto.category);
+    const category = await this.categoryService.findCategoryByName(dto.category);
 
     if (!category) {
-      throw new NotFoundException(`Category "${createSubcategoryDto.category}" not found.`);
+      throw new NotFoundException(`Category "${dto.category}" not found.`);
     }
 
     subcategory.category = category;

@@ -14,8 +14,8 @@ export class CategoriesService {
     private categoryRepository: Repository<Category>,
   ) {}
 
-  async create(createCategoryDto: CreateCategoryDto) {
-    return await this.categoryRepository.save(createCategoryDto);
+  async create(dto: CreateCategoryDto) {
+    return await this.categoryRepository.save(dto);
   }
 
   async findCategoryByName(name: string) {

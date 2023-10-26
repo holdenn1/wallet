@@ -25,21 +25,21 @@ export class AuthService {
   ) {}
 
   async registration(
-    createUserDto: CreateUserDto,
+    dto: CreateUserDto,
     userPhoto: Express.Multer.File,
   ): Promise<any> {
     const userExists = await this.userService.findOneUserByEmail(
-      createUserDto.email,
+      dto.email,
     );
     if (userExists) {
       throw new BadRequestException('User already exists');
     }
-    const hash = await argon2.hash(createUserDto.password);
+    const hash = await argon2.hash(dto.password);
 
     const avatar = await this.userService.uploadAvatar(userPhoto);
 
     const userWithPhotoAndHashPassword = {
-      ...createUserDto,
+      ...dto,
       password: hash,
       photo: avatar,
     };
@@ -56,8 +56,8 @@ export class AuthService {
     return { ...tokens, user: mapToUserProfile(newUser) };
   }
 
-  async login(data: CreateAuthDto) {
-    const findUser = await this.userService.findOneUserByEmail(data.email);
+  async login(dto: CreateAuthDto) {
+    const findUser = await this.userService.findOneUserByEmail(dto.email);
 
     if (!findUser) throw new BadRequestException('User does not exist');
 
@@ -67,7 +67,7 @@ export class AuthService {
 
     const passwordMatches = await argon2.verify(
       findUser.password,
-      data.password,
+      dto.password,
     );
 
     if (!passwordMatches) {

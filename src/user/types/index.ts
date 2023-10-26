@@ -3,9 +3,9 @@ import { User } from '../entities/user.entity';
 import { CategoryType } from '@/categories/types';
 
 export enum Banks {
-  MONOBANK = 'monobank',
-  PRIVAT_BANK = 'privat-bank',
-  OSCHADBANK = 'oschadbank',
+  MONOBANK = 'MonoBank',
+  PRIVAT_BANK = 'PrivatBank',
+  OSCHADBANK = 'OschadBank',
 }
 
 export type UserToProfile = Omit<
