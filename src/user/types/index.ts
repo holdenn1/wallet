@@ -17,12 +17,12 @@ export type UpdateUserBalanceDataType = {
   userId: number;
   amount: number;
   paymentMethod: PaymentMethod;
-  bank: string;
+  bankName: Banks;
   typeOperation: TypeOperation;
  
 };
 
-export type UpdateUserCashBalanceData = Omit<UpdateUserBalanceDataType, 'bank' | 'paymentMethod'>
+export type UpdateUserCashBalanceData = Omit<UpdateUserBalanceDataType, 'bankName' | 'paymentMethod'>
 
 export type UpdateUserCreditCardBalanceData = Omit<UpdateUserBalanceDataType, 'paymentMethod'>
 

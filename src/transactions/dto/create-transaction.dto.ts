@@ -12,7 +12,7 @@ export class CreateTransactionDto {
 
   @IsString()
   @IsOptional()
-  bank: string
+  bankName: Banks
 
   @IsString()
   paymentMethod: PaymentMethod;

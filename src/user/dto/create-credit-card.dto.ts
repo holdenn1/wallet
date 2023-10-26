@@ -3,7 +3,7 @@ import { Banks } from '../types';
 
 export class CreateCreditCardDto {
   @IsString()
-  bankName: string;
+  bankName: Banks;
 
   @IsString()
   balance: string;

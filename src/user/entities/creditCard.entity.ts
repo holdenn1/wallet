@@ -7,7 +7,7 @@ export class CreditCard {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'enum', enum: Banks , unique: true})
+  @Column({ type: 'enum', enum: Banks })
   bankName: string;
 
   @Column({ default: 0 })

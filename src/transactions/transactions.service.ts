@@ -7,6 +7,9 @@ import { Transaction } from './entities/transaction.entity';
 import { Repository } from 'typeorm';
 import { CategoriesService } from '@/categories/categories.service';
 import { SubcategoriesService } from '@/subcategories/subcategories.service';
+import { CorrectBalanceDto } from './dto/update-balance.dto';
+import { CorrectBallanceMethod, BalanceType, UpdateBalanceData, TypeOperation, PaymentMethod } from './types';
+import { Banks } from '@/user/types';
 
 @Injectable()
 export class TransactionsService {
@@ -19,7 +22,7 @@ export class TransactionsService {
   ) {}
 
   async createTransaction(userId: number, dto: CreateTransactionDto) {
-    const { amount, bank, paymentMethod, typeOperation, category, subcategory } = dto;
+    const { amount, bankName, paymentMethod, typeOperation, category, subcategory } = dto;
 
     const foundCategory = await this.categoryService.findCategoryByName(category);
 
@@ -43,7 +46,7 @@ export class TransactionsService {
       amount: +amount,
       paymentMethod,
       typeOperation,
-      bank,
+      bankName,
       userId,
     });
 
@@ -52,10 +55,6 @@ export class TransactionsService {
     }
 
     const user = await this.userService.findOneUserById(userId);
-
-    if (!user) {
-      throw new BadRequestException('User not found');
-    }
 
     return await this.transactionRepository.save({
       type: typeOperation,
@@ -68,4 +67,85 @@ export class TransactionsService {
       user,
     });
   }
+
+  async updateBalance(userId: number, dto: CorrectBalanceDto) {
+    const { correctBalance, balanceType, method, bankName } = dto;
+
+    switch (method) {
+      case CorrectBallanceMethod.CORRECT: {
+        return await this.correctBalance({ correctBalance: +correctBalance, balanceType, bankName, userId });
+      }
+      case CorrectBallanceMethod.CHANGE: {
+        return await this.changeBalance({ correctBalance: +correctBalance, balanceType, bankName, userId });
+      }
+      default: {
+        throw new BadRequestException(`Method ${method} does not exist`);
+      }
+    }
+  }
+
+  async correctBalance(data: UpdateBalanceData) {
+    const { correctBalance, balanceType, bankName, userId } = data;
+    switch (balanceType) {
+      case BalanceType.CASH: {
+        return await this.correctCashBalance(userId, correctBalance);
+      }
+      case BalanceType.CARD: {
+        return await this.correctCardBalance(userId, correctBalance, bankName);
+      }
+      default: {
+        throw new BadRequestException(`Type ${balanceType} does not exist`);
+      }
+    }
+  }
+
+  async correctCashBalance(userId: number, correctBalance: number) {
+    const user = await this.userService.findOneUserById(userId);
+
+    if (correctBalance > user.cash) {
+      const amountOperation = correctBalance - user.cash;
+
+      return await this.createTransaction(userId, {
+        amount: String(amountOperation),
+        category: 'Other',
+        typeOperation: TypeOperation.INCOME,
+        paymentMethod: PaymentMethod.CASH,
+      } as CreateTransactionDto);
+    }
+    const amountOperation = user.cash - correctBalance;
+
+    return await this.createTransaction(userId, {
+      amount: String(amountOperation),
+      category: 'Other',
+      typeOperation: TypeOperation.COST,
+      paymentMethod: PaymentMethod.CASH,
+    } as CreateTransactionDto);
+  }
+
+  async correctCardBalance(userId: number, correctBalance: number, bankName: Banks) {
+    const userCard = await this.userService.getUserCreditCard(userId, bankName);
+
+    if (correctBalance > userCard.balance) {
+      const amountOperation = correctBalance - userCard.balance;
+
+      return await this.createTransaction(userId, {
+        amount: String(amountOperation),
+        category: 'Other',
+        typeOperation: TypeOperation.INCOME,
+        paymentMethod: PaymentMethod.CREDIT_CARD,
+        bankName,
+      } as CreateTransactionDto);
+    }
+    const amountOperation = userCard.balance - correctBalance;
+
+    return await this.createTransaction(userId, {
+      amount: String(amountOperation),
+      category: 'Other',
+      typeOperation: TypeOperation.COST,
+      paymentMethod: PaymentMethod.CREDIT_CARD,
+      bankName,
+    } as CreateTransactionDto);
+  }
+
+  async changeBalance(data: UpdateBalanceData) {}
 }
