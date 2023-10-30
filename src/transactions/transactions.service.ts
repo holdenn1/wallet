@@ -7,9 +7,12 @@ import { Transaction } from './entities/transaction.entity';
 import { Repository } from 'typeorm';
 import { CategoriesService } from '@/categories/categories.service';
 import { SubcategoriesService } from '@/subcategories/subcategories.service';
-import { CorrectBalanceDto } from './dto/update-balance.dto';
+import { CorrectBalanceDto } from './dto/correct-balance.dto';
 import { CorrectBallanceMethod, BalanceType, UpdateBalanceData, TypeOperation, PaymentMethod } from './types';
 import { Banks } from '@/user/types';
+import { mapTransactionToProfile, mapTransactionsToProfile } from './mappers';
+import { User } from '@/user/entities/user.entity';
+import { CreditCard } from '@/user/entities/creditCard.entity';
 
 @Injectable()
 export class TransactionsService {
@@ -42,7 +45,7 @@ export class TransactionsService {
       ? await this.subcategoryService.findSubcategoryByName(subcategory, category)
       : null;
 
-    const userData = await this.userService.updateUserBalance({
+    const updateUserData = await this.userService.updateUserBalance({
       amount: +amount,
       paymentMethod,
       typeOperation,
@@ -50,13 +53,13 @@ export class TransactionsService {
       userId,
     });
 
-    if (!userData) {
+    if (!updateUserData) {
       throw new BadRequestException('Something went wrong');
     }
 
     const user = await this.userService.findOneUserById(userId);
 
-    return await this.transactionRepository.save({
+    const transaction = await this.transactionRepository.save({
       type: typeOperation,
       paymentMethod,
       amount: +amount,
@@ -65,7 +68,10 @@ export class TransactionsService {
       category: foundCategory,
       subcategory: foundSubcategory,
       user,
+      creditCard: (updateUserData as CreditCard).bankName && updateUserData,
     });
+
+    return mapTransactionToProfile(transaction);
   }
 
   async updateBalance(userId: number, dto: CorrectBalanceDto) {
@@ -168,5 +174,21 @@ export class TransactionsService {
 
   async changeCardBalance(userId: number, correctBalance: number, bankName: Banks) {
     return await this.userService.updateCreditCardBalance(userId, bankName, correctBalance);
+  }
+
+  async getTransactions(userId: number) {
+    try {
+      const transactions = await this.transactionRepository.find({
+        relations: { user: true, category: true, subcategory: true },
+        where: { user: { id: userId } },
+        order: {
+          createAt: 'DESC',
+        },
+      });
+
+      return mapTransactionsToProfile(transactions);
+    } catch (e) {
+      throw new BadRequestException(e);
+    }
   }
 }

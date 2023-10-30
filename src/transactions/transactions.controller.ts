@@ -4,18 +4,16 @@ import {
   Post,
   Body,
   Patch,
-  Param,
-  Delete,
   UseGuards,
   Req,
-  BadRequestException,
   UsePipes,
   ValidationPipe,
+  Param,
 } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { AccessTokenGuard } from '@/auth/guards/accessToken.guard';
-import { CorrectBalanceDto } from './dto/update-balance.dto';
+import { CorrectBalanceDto } from './dto/correct-balance.dto';
 @UseGuards(AccessTokenGuard)
 @Controller('transactions')
 export class TransactionsController {
@@ -31,5 +29,10 @@ export class TransactionsController {
   @UsePipes(new ValidationPipe())
   updateBalance(@Req() req, @Body() correctBalanceDto: CorrectBalanceDto) {
     return this.transactionsService.updateBalance(+req.user.sub, correctBalanceDto);
+  }
+
+  @Get('get-transactions/:userId')
+  getTransactions(@Param('userId') userId: string) {
+    return this.transactionsService.getTransactions(+userId)
   }
 }

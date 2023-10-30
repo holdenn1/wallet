@@ -122,7 +122,7 @@ export class AuthService {
 
   async refreshTokensLogin(userData: UserRequest) {
     try {
-      const findUser = await this.userService.findOneUserById(userData.sub);
+      const findUser = await this.userService.getUserWithCreditCard(userData.sub);
       const tokens = await this.refreshTokens(userData);
       const user = mapToUserProfile(findUser);
       return { user, tokens };

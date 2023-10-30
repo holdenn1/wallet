@@ -41,8 +41,22 @@ export class UserService {
     return user;
   }
 
+  async getUserWithCreditCard(id: number) {
+    const user = await this.userRepository.findOne({
+      relations: { creditCard: true },
+      where: { id },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User does not exist');
+    }
+
+    return user;
+  }
+
   async findOneUserByEmail(email: string) {
     return await this.userRepository.findOne({
+      relations: { creditCard: true },
       where: {
         email: email,
       },
@@ -50,6 +64,7 @@ export class UserService {
   }
 
   checkIsBankExist(bankName: Banks) {
+    
     const BANKS = ['MonoBank', 'OschadBank', 'PrivatBank'];
 
     if (!BANKS.includes(bankName)) {
@@ -189,7 +204,13 @@ export class UserService {
       throw new BadRequestException(`User already has ${bankName} credit card  `);
     }
 
-    return await this.creditCardRepository.save({ balance: +balance, bankName, user });
+    return await this.creditCardRepository.save({
+      balance: +balance,
+      bankName,
+      user,
+      bankIcon: 'fa-credit-card',
+      bankBackgroundColor: 'background-color: #2a52ca;',
+    });
   }
 
   async correctUserCashBalance(userId: number, correctBalance: number) {

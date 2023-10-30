@@ -11,7 +11,7 @@ export enum Banks {
 export type UserToProfile = Omit<
   User,
   'refreshTokens' | 'transactions' | 'createAt' | 'updateAt' | 'password'
->;
+> ;
 
 export type UpdateUserBalanceDataType = {
   userId: number;
