@@ -63,8 +63,7 @@ export class UserService {
     });
   }
 
-  checkIsBankExist(bankName: Banks) {
-    
+  checkIsBankExist(bankName: string) {
     const BANKS = ['MonoBank', 'OschadBank', 'PrivatBank'];
 
     if (!BANKS.includes(bankName)) {
@@ -72,13 +71,21 @@ export class UserService {
     }
   }
 
-  async getUserCreditCard(userId: number, bankName: Banks) {
+  async getUserCreditCard(bankId: number) {
+    if(!bankId){
+      throw new BadRequestException(`Bank ${bankId} does not exist`)
+    }
     return await this.creditCardRepository.findOne({
-      relations: { user: true },
-      where: { user: { id: userId }, bankName },
+      where: { id: bankId },
     });
   }
 
+  async getCreditCardByName(userId: number, bankName: string) {
+    return await this.creditCardRepository.findOne({
+      relations: { user: true },
+      where: { bankName, user: { id: userId } },
+    });
+  }
   async updateUser(id: number, dto: Partial<UpdateUserDto>) {
     const user = await this.findOneUserById(id);
     user.firstName = dto.firstName ?? user.firstName;
@@ -90,8 +97,8 @@ export class UserService {
     return this.userRepository.save(user);
   }
 
-  async updateCreditCardBalance(userId: number, bankName: Banks, currentBalance: number) {
-    const creditCard = await this.getUserCreditCard(userId, bankName);
+  async updateCreditCardBalance(userId: number, bankId: number, currentBalance: number) {
+    const creditCard = await this.getUserCreditCard(bankId);
 
     creditCard.balance = currentBalance ?? creditCard.balance;
 
@@ -116,12 +123,12 @@ export class UserService {
   }
 
   async updateUserBalance(data: UpdateUserBalanceDataType) {
-    const { amount, bankName, paymentMethod, typeOperation, userId } = data;
+    const { amount, bankId, paymentMethod, typeOperation, userId } = data;
     if (paymentMethod === PaymentMethod.CASH) {
       return await this.updateUserCash({ amount, typeOperation, userId });
     }
     if (paymentMethod === PaymentMethod.CREDIT_CARD) {
-      return await this.updateUserCreditCardBalance({ amount, typeOperation, userId, bankName });
+      return await this.updateUserCreditCardBalance({ amount, typeOperation, userId, bankId });
     }
   }
 
@@ -157,11 +164,11 @@ export class UserService {
   }
 
   async updateUserCreditCardBalance(data: UpdateUserCreditCardBalanceData) {
-    const { userId, bankName, amount, typeOperation } = data;
+    const { userId, bankId, amount, typeOperation } = data;
 
-    this.checkIsBankExist(bankName);
+    const creditCard = await this.getUserCreditCard(bankId);
 
-    const creditCard = await this.getUserCreditCard(userId, bankName);
+    this.checkIsBankExist(creditCard.bankName);
 
     if (!creditCard) {
       throw new BadRequestException('Credit card not found');
@@ -198,7 +205,7 @@ export class UserService {
 
     this.checkIsBankExist(bankName);
 
-    const creditCard = await this.getUserCreditCard(userId, bankName);
+    const creditCard = await this.getCreditCardByName(userId, bankName);
 
     if (creditCard) {
       throw new BadRequestException(`User already has ${bankName} credit card  `);

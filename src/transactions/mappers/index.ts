@@ -1,6 +1,7 @@
 import { Transaction } from '@/transactions/entities/transaction.entity';
 import { TransactionToProfile } from '../types';
 import { Banks } from '@/user/types';
+import { mapToUserProfile } from '@/auth/mappers';
 
 export const mapTransactionsToProfile = (transactions: Transaction[]): TransactionToProfile[] => {
   return transactions.map((transaction) => ({
@@ -27,5 +28,6 @@ export const mapTransactionToProfile = (transaction: Transaction): TransactionTo
   category: transaction.category,
   subcategory: transaction.subcategory,
   createAt: transaction.createAt,
-  creditCard: transaction.creditCard
+  creditCard: transaction.creditCard,
+  user: mapToUserProfile(transaction.user)
 });

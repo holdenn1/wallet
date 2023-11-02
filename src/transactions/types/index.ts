@@ -1,5 +1,6 @@
-import { Banks } from '@/user/types';
+import { Banks, UserToProfile } from '@/user/types';
 import { Transaction } from '../entities/transaction.entity';
+import { User } from '@/user/entities/user.entity';
 
 export enum PaymentMethod {
   CREDIT_CARD = 'card',
@@ -26,7 +27,9 @@ export type UpdateBalanceData = {
   userId: number;
   correctBalance: number;
   balanceType: BalanceType;
-  bankName: Banks;
+  bankId: number;
 };
 
-export type TransactionToProfile = Omit<Transaction, 'user' | 'updateAt'> 
+export type TransactionToProfile = Omit<Transaction, 'user' | 'updateAt'>  | {
+  user: UserToProfile
+}

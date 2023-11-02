@@ -9,9 +9,9 @@ export class CorrectBalanceDto {
   @IsString()
   balanceType: BalanceType;
 
-  @IsString()
+  
   @IsOptional()
-  bankName: Banks;
+  bankId: number
 
   @IsString()
   correctBalance: string;

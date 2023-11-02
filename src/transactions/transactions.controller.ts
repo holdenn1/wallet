@@ -14,6 +14,7 @@ import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { AccessTokenGuard } from '@/auth/guards/accessToken.guard';
 import { CorrectBalanceDto } from './dto/correct-balance.dto';
+import { UpdateTransactionDto } from './dto/update-transaction.dto';
 @UseGuards(AccessTokenGuard)
 @Controller('transactions')
 export class TransactionsController {
@@ -28,11 +29,20 @@ export class TransactionsController {
   @Patch('correct/balance')
   @UsePipes(new ValidationPipe())
   updateBalance(@Req() req, @Body() correctBalanceDto: CorrectBalanceDto) {
+    
     return this.transactionsService.updateBalance(+req.user.sub, correctBalanceDto);
+  }
+
+  
+
+  @Patch('update/transaction/:transactionId')
+  updateTransaction(@Param('transactionId') transactionId: string, @Body() updateTransactionDto: UpdateTransactionDto) {
+    
+    return this.transactionsService.updateTransaction(+transactionId, updateTransactionDto)
   }
 
   @Get('get-transactions/:userId')
   getTransactions(@Param('userId') userId: string) {
-    return this.transactionsService.getTransactions(+userId)
+    return this.transactionsService.getTransactions(+userId);
   }
 }
