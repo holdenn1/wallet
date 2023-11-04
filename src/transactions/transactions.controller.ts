@@ -54,8 +54,12 @@ export class TransactionsController {
   }
 
   @Get('get-transaction/by-period')
-  getTransactionByPeriod(@Query('period') period: Period){
-    
-    return this.transactionsService.getTransactionByPeriod(period)
+  getTransactionByPeriod(@Query('period') period: Period) {
+    return this.transactionsService.getTransactionByPeriod(period);
+  }
+
+  @Get('monthly-summary')
+  async getMonthlySummary(@Req() req) {
+    return this.transactionsService.getMonthlySummary(+req.user.sub);
   }
 }

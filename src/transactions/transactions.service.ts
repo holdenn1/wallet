@@ -316,4 +316,37 @@ export class TransactionsService {
 
     return records;
   }
+
+  async getMonthlySummary(userId: number) {
+    const currentDate = new Date();
+    const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+
+    const userTransactions = await this.transactionRepository.find({
+      relations: { user: true },
+      where: {
+        user: { id: userId },
+        createAt: Between(startOfMonth, endOfMonth),
+      },
+    });
+
+    const costs = [];
+    const incomes = [];
+
+    userTransactions.forEach((transaction) => {
+      if (transaction.type === 'cost' || transaction.type === 'transfer') {
+        costs.push(transaction.amount);
+      } else if (transaction.type === 'income') {
+        incomes.push(transaction.amount);
+      }
+    });
+
+    const totalCosts = costs.reduce((sum, cost) => sum + cost, 0);
+    const totalIncome = incomes.reduce((sum, income) => sum + income, 0);
+
+    return {
+      totalCosts,
+      totalIncome,
+    };
+  }
 }
