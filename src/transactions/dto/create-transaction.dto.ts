@@ -1,18 +1,17 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsNumber, IsOptional, IsString } from 'class-validator';
 import { PaymentMethod, TypeOperation } from '../types';
 import { Banks } from '@/user/types';
 
 export class CreateTransactionDto {
-  
   @IsString()
   typeOperation: TypeOperation;
 
   @IsString()
   amount: string;
 
-  @IsString()
+  @IsNumber()
   @IsOptional()
-  bank: string
+  cardId: number;
 
   @IsString()
   paymentMethod: PaymentMethod;
@@ -30,5 +29,5 @@ export class CreateTransactionDto {
 
   @IsString()
   @IsOptional()
-  subcategory: string ;
+  subcategory: string;
 }

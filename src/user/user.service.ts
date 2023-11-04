@@ -71,12 +71,13 @@ export class UserService {
     }
   }
 
-  async getUserCreditCard(bankId: number) {
-    if(!bankId){
-      throw new BadRequestException(`Bank ${bankId} does not exist`)
+  async getUserCreditCard(cardId: number) {
+    
+    if(!cardId){
+      throw new BadRequestException(`Card does not exist`)
     }
     return await this.creditCardRepository.findOne({
-      where: { id: bankId },
+      where: { id: cardId },
     });
   }
 
@@ -87,6 +88,7 @@ export class UserService {
     });
   }
   async updateUser(id: number, dto: Partial<UpdateUserDto>) {
+    
     const user = await this.findOneUserById(id);
     user.firstName = dto.firstName ?? user.firstName;
     user.lastName = dto.lastName ?? user.lastName;
@@ -97,8 +99,8 @@ export class UserService {
     return this.userRepository.save(user);
   }
 
-  async updateCreditCardBalance(userId: number, bankId: number, currentBalance: number) {
-    const creditCard = await this.getUserCreditCard(bankId);
+  async updateCreditCardBalance( cardId: number, currentBalance: number) {
+    const creditCard = await this.getUserCreditCard(cardId);
 
     creditCard.balance = currentBalance ?? creditCard.balance;
 
@@ -123,12 +125,12 @@ export class UserService {
   }
 
   async updateUserBalance(data: UpdateUserBalanceDataType) {
-    const { amount, bankId, paymentMethod, typeOperation, userId } = data;
+    const { amount, cardId, paymentMethod, typeOperation, userId } = data;
     if (paymentMethod === PaymentMethod.CASH) {
       return await this.updateUserCash({ amount, typeOperation, userId });
     }
     if (paymentMethod === PaymentMethod.CREDIT_CARD) {
-      return await this.updateUserCreditCardBalance({ amount, typeOperation, userId, bankId });
+      return await this.updateUserCreditCardBalance({ amount, typeOperation, userId, cardId });
     }
   }
 
@@ -164,9 +166,9 @@ export class UserService {
   }
 
   async updateUserCreditCardBalance(data: UpdateUserCreditCardBalanceData) {
-    const { userId, bankId, amount, typeOperation } = data;
+    const { userId, cardId, amount, typeOperation } = data;
 
-    const creditCard = await this.getUserCreditCard(bankId);
+    const creditCard = await this.getUserCreditCard(cardId);
 
     this.checkIsBankExist(creditCard.bankName);
 

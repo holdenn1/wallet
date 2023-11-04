@@ -26,7 +26,7 @@ export class TransactionsService {
   ) {}
 
   async createTransaction(userId: number, dto: CreateTransactionDto) {
-    const { amount, bank, paymentMethod, typeOperation, category, subcategory } = dto;
+    const { amount, cardId, paymentMethod, typeOperation, category, subcategory } = dto;
 
     const foundCategory = await this.categoryService.findCategoryByName(category);
 
@@ -50,7 +50,7 @@ export class TransactionsService {
       amount: +amount,
       paymentMethod,
       typeOperation,
-      bankId: +bank,
+      cardId,
       userId,
     });
 
@@ -76,14 +76,14 @@ export class TransactionsService {
   }
 
   async updateBalance(userId: number, dto: CorrectBalanceDto) {
-    const { correctBalance, balanceType, method, bankId } = dto;
+    const { correctBalance, balanceType, method, cardId } = dto;
 
     switch (method) {
       case CorrectBallanceMethod.CORRECT: {
         return await this.correctBalance({
           correctBalance: +correctBalance,
           balanceType,
-          bankId,
+          cardId,
           userId,
         });
       }
@@ -91,7 +91,7 @@ export class TransactionsService {
         return await this.changeBalance({
           correctBalance: +correctBalance,
           balanceType,
-          bankId,
+          cardId,
           userId,
         });
       }
@@ -102,13 +102,13 @@ export class TransactionsService {
   }
 
   async correctBalance(data: UpdateBalanceData) {
-    const { correctBalance, balanceType, bankId, userId } = data;
+    const { correctBalance, balanceType, cardId, userId } = data;
     switch (balanceType) {
       case BalanceType.CASH: {
         return await this.correctCashBalance(userId, correctBalance);
       }
       case BalanceType.CARD: {
-        return await this.correctCardBalance(userId, correctBalance, bankId);
+        return await this.correctCardBalance(userId, correctBalance, cardId);
       }
       default: {
         throw new BadRequestException(`Type ${balanceType} does not exist`);
@@ -127,7 +127,6 @@ export class TransactionsService {
         category: 'Other',
         typeOperation: TypeOperation.INCOME,
         paymentMethod: PaymentMethod.CASH,
-
         description: '',
         recipient: '',
       } as CreateTransactionDto);
@@ -147,9 +146,8 @@ export class TransactionsService {
     return user;
   }
 
-  async correctCardBalance(userId: number, correctBalance: number, bankId: number) {
-    
-    const userCard = await this.userService.getUserCreditCard(bankId);
+  async correctCardBalance(userId: number, correctBalance: number, cardId: number) {
+    const userCard = await this.userService.getUserCreditCard(cardId);
 
     if (correctBalance > userCard.balance) {
       const amountOperation = correctBalance - userCard.balance;
@@ -159,7 +157,7 @@ export class TransactionsService {
         category: 'Other',
         typeOperation: TypeOperation.INCOME,
         paymentMethod: PaymentMethod.CREDIT_CARD,
-        bank: String(bankId),
+        cardId,
         description: '',
         recipient: '',
       } as CreateTransactionDto);
@@ -173,7 +171,7 @@ export class TransactionsService {
         category: 'Other',
         typeOperation: TypeOperation.COST,
         paymentMethod: PaymentMethod.CREDIT_CARD,
-        bank: String(bankId),
+        cardId,
         description: '',
         recipient: '',
       } as CreateTransactionDto);
@@ -183,13 +181,13 @@ export class TransactionsService {
   }
 
   async changeBalance(data: UpdateBalanceData) {
-    const { correctBalance, balanceType, bankId, userId } = data;
+    const { correctBalance, balanceType, cardId, userId } = data;
     switch (balanceType) {
       case BalanceType.CASH: {
         return await this.changeCashBalance(userId, correctBalance);
       }
       case BalanceType.CARD: {
-        return await this.changeCardBalance(userId, correctBalance, bankId);
+        return await this.changeCardBalance(correctBalance, cardId);
       }
       default: {
         throw new BadRequestException(`Type ${balanceType} does not exist`);
@@ -201,8 +199,8 @@ export class TransactionsService {
     return await this.userService.updateUser(userId, { cash: correctBalance });
   }
 
-  async changeCardBalance(userId: number, correctBalance: number, bankId: number) {
-    return await this.userService.updateCreditCardBalance(userId, bankId, correctBalance);
+  async changeCardBalance(correctBalance: number, cardId: number) {
+    return await this.userService.updateCreditCardBalance(cardId, correctBalance);
   }
 
   async getTransactions(userId: number) {
@@ -210,9 +208,7 @@ export class TransactionsService {
       const transactions = await this.transactionRepository.find({
         relations: { user: true, category: true, subcategory: true, creditCard: true },
         where: { user: { id: userId } },
-        order: {
-          createAt: 'DESC',
-        },
+        order: {createAt: 'ASC'}
       });
 
       return mapTransactionsToProfile(transactions);
@@ -222,6 +218,7 @@ export class TransactionsService {
   }
 
   async updateTransaction(transactionId: number, dto: UpdateTransactionDto) {
+
     const transaction = await this.transactionRepository.findOne({
       relations: { user: true, creditCard: true },
       where: { id: transactionId },
@@ -231,22 +228,55 @@ export class TransactionsService {
       throw new BadRequestException('Transaction not found');
     }
 
+    if (transaction.paymentMethod === 'cash') {
+      const cashBalance =
+        transaction.type !== 'income'
+          ? transaction.user.cash + transaction.amount - +dto.amount
+          : transaction.user.cash + +dto.amount - transaction.amount;
+
+      await this.userService.updateUser(transaction.user.id, { cash: cashBalance });
+    } else {
+      const card = await this.userService.getUserCreditCard(transaction.creditCard.id);
+
+      const cardBalance =
+        transaction.type !== 'income'
+          ? card.balance + transaction.amount - +dto.amount
+          : card.balance + +dto.amount - transaction.amount;
+
+      await this.userService.updateCreditCardBalance(transaction.creditCard.id, cardBalance);
+    }
+
     transaction.amount = +dto.amount ?? transaction.amount;
     transaction.createAt = dto.createAt ?? transaction.createAt;
     transaction.description = dto.description ?? transaction.description;
     transaction.recipient = dto.recipient ?? transaction.recipient;
 
-    if (transaction.paymentMethod === 'cash') {
-      const balance =
-        transaction.type !== 'income'
-          ? transaction.user.cash - +dto.amount
-          : transaction.user.cash + +dto.amount;
-
-      await this.userService.updateUser(transaction.user.id, { cash: balance });
-    }
-
-    // await this.userService.updateCreditCardBalance()
-
     return this.transactionRepository.save(transaction);
+  }
+
+  async deleteTransaction(transactionId: number) {
+    const transaction = await this.transactionRepository.findOne({
+      relations: { user: true, creditCard: true },
+      where: { id: transactionId },
+    });
+
+    if (transaction.type === 'income') {
+      if (transaction.paymentMethod === 'cash') {
+        const userIncomeCashBalance = transaction.user.cash - transaction.amount;
+        await this.userService.updateUser(transaction.user.id, { cash: userIncomeCashBalance });
+        return await this.transactionRepository.remove(transaction);
+      }
+      const userIncomeCardBalance = transaction.creditCard.balance - transaction.amount;
+      await this.userService.updateCreditCardBalance(transaction.creditCard.id, userIncomeCardBalance);
+      return await this.transactionRepository.remove(transaction);
+    }
+    if (transaction.paymentMethod === 'cash') {
+      const userCostCardBalance = transaction.user.cash + transaction.amount;
+      await this.userService.updateUser(transaction.user.id, { cash: userCostCardBalance });
+      return await this.transactionRepository.remove(transaction);
+    }
+    const userCostCardBalance = transaction.creditCard.balance + transaction.amount;
+    await this.userService.updateCreditCardBalance(transaction.creditCard.id, userCostCardBalance);
+    return await this.transactionRepository.remove(transaction);
   }
 }

@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsNumber, IsOptional, IsString } from 'class-validator';
 import { BalanceType, CorrectBallanceMethod } from '../types';
 import { Banks } from '@/user/types';
 
@@ -9,9 +9,9 @@ export class CorrectBalanceDto {
   @IsString()
   balanceType: BalanceType;
 
-  
+  @IsNumber()
   @IsOptional()
-  bankId: number
+  cardId: number
 
   @IsString()
   correctBalance: string;

@@ -27,7 +27,7 @@ export type UpdateBalanceData = {
   userId: number;
   correctBalance: number;
   balanceType: BalanceType;
-  bankId: number;
+  cardId: number;
 };
 
 export type TransactionToProfile = Omit<Transaction, 'user' | 'updateAt'>  | {
