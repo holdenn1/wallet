@@ -10,12 +10,14 @@ import {
   ValidationPipe,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { AccessTokenGuard } from '@/auth/guards/accessToken.guard';
 import { CorrectBalanceDto } from './dto/correct-balance.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
+import { Period } from './types';
 @UseGuards(AccessTokenGuard)
 @Controller('transactions')
 export class TransactionsController {
@@ -49,5 +51,11 @@ export class TransactionsController {
   @Delete('delete-transaction/:transactionId')
   deleteTransaction(@Param('transactionId') transactionId: string) {
     return this.transactionsService.deleteTransaction(+transactionId);
+  }
+
+  @Get('get-transaction/by-period')
+  getTransactionByPeriod(@Query('period') period: Period){
+    
+    return this.transactionsService.getTransactionByPeriod(period)
   }
 }

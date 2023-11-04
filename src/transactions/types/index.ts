@@ -33,3 +33,6 @@ export type UpdateBalanceData = {
 export type TransactionToProfile = Omit<Transaction, 'user' | 'updateAt'>  | {
   user: UserToProfile
 }
+
+
+export type Period = 'today' | 'week' | 'month' | 'year'

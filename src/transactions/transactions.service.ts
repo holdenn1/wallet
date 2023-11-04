@@ -4,11 +4,18 @@ import { CategoryType } from '@/categories/types';
 import { UserService } from '@/user/user.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Transaction } from './entities/transaction.entity';
-import { Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { CategoriesService } from '@/categories/categories.service';
 import { SubcategoriesService } from '@/subcategories/subcategories.service';
 import { CorrectBalanceDto } from './dto/correct-balance.dto';
-import { CorrectBallanceMethod, BalanceType, UpdateBalanceData, TypeOperation, PaymentMethod } from './types';
+import {
+  CorrectBallanceMethod,
+  BalanceType,
+  UpdateBalanceData,
+  TypeOperation,
+  PaymentMethod,
+  Period,
+} from './types';
 import { Banks } from '@/user/types';
 import { mapTransactionToProfile, mapTransactionsToProfile } from './mappers';
 import { User } from '@/user/entities/user.entity';
@@ -205,10 +212,15 @@ export class TransactionsService {
 
   async getTransactions(userId: number) {
     try {
+      const currentDate = new Date();
+
+      const startDate = new Date(currentDate);
+      startDate.setMonth(currentDate.getMonth() - 1);
+
       const transactions = await this.transactionRepository.find({
         relations: { user: true, category: true, subcategory: true, creditCard: true },
-        where: { user: { id: userId } },
-        order: {createAt: 'ASC'}
+        where: { user: { id: userId }, createAt: Between(startDate, currentDate) },
+        order: { createAt: 'DESC' },
       });
 
       return mapTransactionsToProfile(transactions);
@@ -218,7 +230,6 @@ export class TransactionsService {
   }
 
   async updateTransaction(transactionId: number, dto: UpdateTransactionDto) {
-
     const transaction = await this.transactionRepository.findOne({
       relations: { user: true, creditCard: true },
       where: { id: transactionId },
@@ -247,7 +258,6 @@ export class TransactionsService {
     }
 
     transaction.amount = +dto.amount ?? transaction.amount;
-    transaction.createAt = dto.createAt ?? transaction.createAt;
     transaction.description = dto.description ?? transaction.description;
     transaction.recipient = dto.recipient ?? transaction.recipient;
 
@@ -278,5 +288,32 @@ export class TransactionsService {
     const userCostCardBalance = transaction.creditCard.balance + transaction.amount;
     await this.userService.updateCreditCardBalance(transaction.creditCard.id, userCostCardBalance);
     return await this.transactionRepository.remove(transaction);
+  }
+
+  async getTransactionByPeriod(period: Period) {
+    const currentDate = new Date();
+    const startDate = new Date();
+
+    if (period === 'today') {
+      startDate.setHours(0, 0, 0, 0); // Встановлюємо початок поточного дня
+    } else if (period === 'week') {
+      startDate.setDate(currentDate.getDate() - 7);
+    } else if (period === 'month') {
+      startDate.setMonth(currentDate.getMonth() - 1);
+    } else if (period === 'year') {
+      startDate.setFullYear(currentDate.getFullYear() - 1);
+    } else {
+      return [];
+    }
+
+    const records = await this.transactionRepository.find({
+      relations: { user: true, category: true, subcategory: true, creditCard: true },
+      where: {
+        createAt: Between(startDate, currentDate),
+      },
+      order: { createAt: 'DESC' },
+    });
+
+    return records;
   }
 }
