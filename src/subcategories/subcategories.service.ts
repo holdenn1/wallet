@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateSubcategoryDto } from './dto/create-subcategory.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Subcategory } from './entities/subcategory.entity';
@@ -14,6 +14,14 @@ export class SubcategoriesService {
     private categoryService: CategoriesService,
   ) {}
   async create(dto: CreateSubcategoryDto) {
+    const findSubcategory = await this.subcategoryRepository.findOne({
+      where: { subcategory: dto.subcategory },
+    });
+
+    if (findSubcategory) {
+      throw new BadRequestException(`${dto.subcategory} already exist is subcategory list`);
+    }
+
     const subcategory = new Subcategory();
     subcategory.type = dto.type;
     subcategory.subcategory = dto.subcategory;

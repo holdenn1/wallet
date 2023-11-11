@@ -36,6 +36,7 @@ export class AuthController {
   @Get('google/redirect')
   @UseGuards(GoogleGuard)
   async googleAuthRedirect(@Req() req, @Res() res) {
+  
     await this.authService.googleAuth(req.user, res);
   }
 
@@ -46,12 +47,15 @@ export class AuthController {
     @Body() createUserDto: CreateUserDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
+    
     return this.authService.registration(createUserDto, file);
+
   }
 
   @Post('login')
   @UsePipes(new ValidationPipe())
   login(@Body() data: CreateAuthDto) {
+    
     return this.authService.login(data);
   }
 

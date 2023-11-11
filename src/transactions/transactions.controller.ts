@@ -43,23 +43,28 @@ export class TransactionsController {
     return this.transactionsService.updateTransaction(+transactionId, updateTransactionDto);
   }
 
-  @Get('get-transactions/:userId')
-  getTransactions(@Param('userId') userId: string) {
-    return this.transactionsService.getTransactions(+userId);
-  }
-
   @Delete('delete-transaction/:transactionId')
   deleteTransaction(@Param('transactionId') transactionId: string) {
     return this.transactionsService.deleteTransaction(+transactionId);
   }
 
   @Get('get-transaction/by-period')
-  getTransactionByPeriod(@Query('period') period: Period) {
-    return this.transactionsService.getTransactionByPeriod(period);
+  getTransactionByPeriod(
+    @Req() req,
+    @Query('period') period: Period,
+    @Query('page') page: string,
+    @Query('pageSize') pageSize: string,
+  ) {
+    return this.transactionsService.getTransactionByPeriod(+req.user.sub, period, +page, +pageSize);
   }
 
   @Get('monthly-summary')
-  async getMonthlySummary(@Req() req) {
+  getMonthlySummary(@Req() req) {
     return this.transactionsService.getMonthlySummary(+req.user.sub);
+  }
+
+  @Get('monthly/costs')
+  getMonthlyCosts(@Req() req) {
+    return this.transactionsService.getMonthlyCosts(+req.user.sub);
   }
 }

@@ -22,10 +22,10 @@ import { mapToUserProfile } from '@/auth/mappers';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Post('upload-cover')
+  @Post('update-user-avatar')
   @UseInterceptors(FileInterceptor('cover'))
   uploadAvatar(@Req() req, @UploadedFile() file: Express.Multer.File) {
-    return this.userService.uploadAvatar(file, req.user.sub);
+    return this.userService.updateUserAvatar(file,+req.user.sub);
   }
 
   @Get('get-user')
@@ -43,6 +43,7 @@ export class UserController {
   @UsePipes(new ValidationPipe())
   @Patch('update-user')
   updateUserData(@Req() req, @Body() updateUserDto: Partial<UpdateUserDto>) {
+    
     return this.userService.updateUser(+req.user.sub, updateUserDto);
   }
 }

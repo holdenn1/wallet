@@ -17,7 +17,7 @@ import {
   Period,
 } from './types';
 import { Banks } from '@/user/types';
-import { mapTransactionToProfile, mapTransactionsToProfile } from './mappers';
+import { mapTransactionToProfile } from './mappers';
 import { User } from '@/user/entities/user.entity';
 import { CreditCard } from '@/user/entities/creditCard.entity';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
@@ -66,6 +66,10 @@ export class TransactionsService {
     }
 
     const user = await this.userService.findOneUserById(userId);
+
+    if (!user) {
+      throw new BadRequestException('User does not exist');
+    }
 
     const transaction = await this.transactionRepository.save({
       type: typeOperation,
@@ -125,6 +129,10 @@ export class TransactionsService {
 
   async correctCashBalance(userId: number, correctBalance: number) {
     const user = await this.userService.findOneUserById(userId);
+
+    if (!user) {
+      throw new BadRequestException('User does not exist');
+    }
 
     if (correctBalance > user.cash) {
       const amountOperation = correctBalance - user.cash;
@@ -203,30 +211,12 @@ export class TransactionsService {
   }
 
   async changeCashBalance(userId: number, correctBalance: number) {
+    
     return await this.userService.updateUser(userId, { cash: correctBalance });
   }
 
   async changeCardBalance(correctBalance: number, cardId: number) {
     return await this.userService.updateCreditCardBalance(cardId, correctBalance);
-  }
-
-  async getTransactions(userId: number) {
-    try {
-      const currentDate = new Date();
-
-      const startDate = new Date(currentDate);
-      startDate.setMonth(currentDate.getMonth() - 1);
-
-      const transactions = await this.transactionRepository.find({
-        relations: { user: true, category: true, subcategory: true, creditCard: true },
-        where: { user: { id: userId }, createAt: Between(startDate, currentDate) },
-        order: { createAt: 'DESC' },
-      });
-
-      return mapTransactionsToProfile(transactions);
-    } catch (e) {
-      throw new BadRequestException(e);
-    }
   }
 
   async updateTransaction(transactionId: number, dto: UpdateTransactionDto) {
@@ -245,6 +235,7 @@ export class TransactionsService {
           ? transaction.user.cash + transaction.amount - +dto.amount
           : transaction.user.cash + +dto.amount - transaction.amount;
 
+          
       await this.userService.updateUser(transaction.user.id, { cash: cashBalance });
     } else {
       const card = await this.userService.getUserCreditCard(transaction.creditCard.id);
@@ -273,6 +264,7 @@ export class TransactionsService {
     if (transaction.type === 'income') {
       if (transaction.paymentMethod === 'cash') {
         const userIncomeCashBalance = transaction.user.cash - transaction.amount;
+        
         await this.userService.updateUser(transaction.user.id, { cash: userIncomeCashBalance });
         return await this.transactionRepository.remove(transaction);
       }
@@ -282,6 +274,7 @@ export class TransactionsService {
     }
     if (transaction.paymentMethod === 'cash') {
       const userCostCardBalance = transaction.user.cash + transaction.amount;
+      
       await this.userService.updateUser(transaction.user.id, { cash: userCostCardBalance });
       return await this.transactionRepository.remove(transaction);
     }
@@ -290,12 +283,14 @@ export class TransactionsService {
     return await this.transactionRepository.remove(transaction);
   }
 
-  async getTransactionByPeriod(period: Period) {
+  async getTransactionByPeriod(userId: number,period: Period,page: number, pageSize: number) {
+    const skip = (page - 1) * pageSize;
+
     const currentDate = new Date();
     const startDate = new Date();
 
     if (period === 'today') {
-      startDate.setHours(0, 0, 0, 0); // Встановлюємо початок поточного дня
+      startDate.setHours(0, 0, 0, 0); 
     } else if (period === 'week') {
       startDate.setDate(currentDate.getDate() - 7);
     } else if (period === 'month') {
@@ -309,9 +304,12 @@ export class TransactionsService {
     const records = await this.transactionRepository.find({
       relations: { user: true, category: true, subcategory: true, creditCard: true },
       where: {
+        user: {id: userId},
         createAt: Between(startDate, currentDate),
       },
       order: { createAt: 'DESC' },
+      skip,
+      take: pageSize,
     });
 
     return records;
@@ -348,5 +346,46 @@ export class TransactionsService {
       totalCosts,
       totalIncome,
     };
+  }
+
+  async getMonthlyCosts(userId: number) {
+    const currentDate = new Date();
+    const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+
+    const costs = await this.transactionRepository.find({
+      relations: { user: true, category: true },
+      where: {
+        user: { id: userId },
+        type: TypeOperation.COST,
+        createAt: Between(startOfMonth, endOfMonth),
+      },
+    });
+
+    const groupedCosts = costs.reduce((acc, cost) => {
+      if (!acc[cost.category?.category]) {
+        acc[cost.category?.category] = 0;
+      }
+      acc[cost.category?.category] += cost.amount;
+      return acc;
+    }, {});
+
+
+
+    const totalAmount = Object.values(groupedCosts).reduce(
+      (acc: number, amount: number) => acc + amount,
+      0,
+    ) as number;
+
+    const result = Object.keys(groupedCosts).map((category) => {
+      return {
+        category,
+        amount: groupedCosts[category],
+        percentage: (groupedCosts[category] / totalAmount) * 100,
+      };
+    });
+
+    
+    return result;
   }
 }

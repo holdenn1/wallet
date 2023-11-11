@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { UserService } from '@/user/user.service';
 import { CreateUserDto } from '@/user/dto/create-user.dto';
 import { CreateAuthDto } from './dto/create-auth.dto';
@@ -24,13 +20,10 @@ export class AuthService {
     private configService: ConfigService,
   ) {}
 
-  async registration(
-    dto: CreateUserDto,
-    userPhoto: Express.Multer.File,
-  ): Promise<any> {
-    const userExists = await this.userService.findOneUserByEmail(
-      dto.email,
-    );
+  async registration(dto: CreateUserDto, userPhoto: Express.Multer.File): Promise<any> {
+    const userExists = await this.userService.findOneUserByEmail(dto.email);
+
+
     if (userExists) {
       throw new BadRequestException('User already exists');
     }
@@ -47,9 +40,7 @@ export class AuthService {
 
     const tokens = await this.generateTokens(newUser);
 
-    const link = `${this.configService.get('BASE_URL')}/auth/verify/${
-      newUser.id
-    }/${tokens.accessToken}`;
+    const link = `${this.configService.get('BASE_URL')}/auth/verify/${newUser.id}/${tokens.accessToken}`;
 
     await this.verifyEmail(newUser.email, link);
 
@@ -57,6 +48,7 @@ export class AuthService {
   }
 
   async login(dto: CreateAuthDto) {
+    
     const findUser = await this.userService.findOneUserByEmail(dto.email);
 
     if (!findUser) throw new BadRequestException('User does not exist');
@@ -65,10 +57,7 @@ export class AuthService {
       throw new ForbiddenException('The password is not correct');
     }
 
-    const passwordMatches = await argon2.verify(
-      findUser.password,
-      dto.password,
-    );
+    const passwordMatches = await argon2.verify(findUser.password, dto.password);
 
     if (!passwordMatches) {
       throw new BadRequestException('Password is incorrect');
@@ -84,9 +73,12 @@ export class AuthService {
       throw new BadRequestException('No user from google');
     }
 
-    const user = await this.userService.findOneUserByEmail(
-      userDataFromGoogle.email,
-    );
+
+
+
+    const user = await this.userService.findOneUserByEmail(userDataFromGoogle.email);
+
+
 
     const createGoogleUser: CreateUserDto = {
       email: userDataFromGoogle.email,
@@ -98,23 +90,19 @@ export class AuthService {
       birthday: null,
     };
 
-    const userData = user
-      ? user
-      : await this.userService.create(createGoogleUser);
+    const userData = user ? user : await this.userService.create(createGoogleUser);
 
     const tokens = await this.generateTokens(userData);
 
-    res.cookie(
-      'userData',
-      { ...tokens, user: mapToUserProfile(userData) },
-      { maxAge: 3600000 },
-    );
+    res.cookie('userData', { ...tokens, user: mapToUserProfile(userData) }, { maxAge: 3600000 });
     res.redirect(`${this.configService.get('CLIENT_URL')}#/`);
   }
+
 
   logout(userId: number) {
     return this.refreshTokenService.removeToken(userId);
   }
+
 
   refreshTokens(user: UserRequest) {
     return this.refreshTokenService.refreshTokens(user);
@@ -122,6 +110,10 @@ export class AuthService {
 
   async refreshTokensLogin(userData: UserRequest) {
     try {
+
+
+
+
       const findUser = await this.userService.getUserWithCreditCard(userData.sub);
       const tokens = await this.refreshTokens(userData);
       const user = mapToUserProfile(findUser);
@@ -190,9 +182,7 @@ export class AuthService {
       html: `
       <div>
         <h1>For recover password, follow the link</h1>
-        <h3><a href='${this.configService.get(
-          'CLIENT_URL',
-        )}#/recover-password?token=${
+        <h3><a href='${this.configService.get('CLIENT_URL')}#/recover-password?token=${
           tokens.accessToken
         }'>Recover password</a></h3> 
       </div>
@@ -213,11 +203,14 @@ export class AuthService {
       throw new BadRequestException('Uncorrected link');
     }
 
-    const updatedUser =  await this.userService.updateUser(decodedToken.sub, {
+    
+    const updatedUser = await this.userService.updateUser(decodedToken.sub, {
       isEmailConfirmed: true,
     });
 
-    return mapToUserProfile(updatedUser)
+    
+
+    return mapToUserProfile(updatedUser);
   }
 
   async recoverUserPassword(token: string, password: string) {
@@ -227,13 +220,17 @@ export class AuthService {
       throw new BadRequestException('Token is invalid');
     }
 
-    const user = this.userService.findOneUserByEmail(decodedToken.email);
+    const user = await this.userService.findOneUserByEmail(decodedToken.email);
+
+    
 
     if (!user) {
       throw new BadRequestException('User does not exist');
     }
 
     const hashPassword = await argon2.hash(password);
+
+    
 
     const updatedUser = await this.userService.updateUser(decodedToken.sub, {
       password: hashPassword,
@@ -243,10 +240,7 @@ export class AuthService {
   }
 
   async generateTokens(user: User) {
-    const tokens = await this.refreshTokenService.getTokens(
-      user.id,
-      user.email,
-    );
+    const tokens = await this.refreshTokenService.getTokens(user.id, user.email);
 
     await this.refreshTokenService.create({
       user,

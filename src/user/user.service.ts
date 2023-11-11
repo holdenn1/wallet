@@ -9,12 +9,12 @@ import { storage } from 'src/firebase';
 import { PaymentMethod, TypeOperation } from '@/transactions/types';
 import { CreditCard } from './entities/creditCard.entity';
 import {
-  Banks,
   UpdateUserBalanceDataType,
   UpdateUserCashBalanceData,
   UpdateUserCreditCardBalanceData,
 } from './types';
 import { CreateCreditCardDto } from './dto/create-credit-card.dto';
+import { mapToUserProfile } from '@/auth/mappers';
 
 @Injectable()
 export class UserService {
@@ -30,15 +30,9 @@ export class UserService {
   }
 
   async findOneUserById(id: number) {
-    const user = await this.userRepository.findOne({
+    return await this.userRepository.findOne({
       where: { id },
     });
-
-    if (!user) {
-      throw new BadRequestException('User does not exist');
-    }
-
-    return user;
   }
 
   async getUserWithCreditCard(id: number) {
@@ -72,9 +66,8 @@ export class UserService {
   }
 
   async getUserCreditCard(cardId: number) {
-    
-    if(!cardId){
-      throw new BadRequestException(`Card does not exist`)
+    if (!cardId) {
+      throw new BadRequestException(`Card does not exist`);
     }
     return await this.creditCardRepository.findOne({
       where: { id: cardId },
@@ -88,8 +81,12 @@ export class UserService {
     });
   }
   async updateUser(id: number, dto: Partial<UpdateUserDto>) {
-    
     const user = await this.findOneUserById(id);
+
+    if (!user) {
+      throw new BadRequestException('User does not exist');
+    }
+
     user.firstName = dto.firstName ?? user.firstName;
     user.lastName = dto.lastName ?? user.lastName;
     user.photo = dto.photo ?? user.photo;
@@ -99,7 +96,7 @@ export class UserService {
     return this.userRepository.save(user);
   }
 
-  async updateCreditCardBalance( cardId: number, currentBalance: number) {
+  async updateCreditCardBalance(cardId: number, currentBalance: number) {
     const creditCard = await this.getUserCreditCard(cardId);
 
     creditCard.balance = currentBalance ?? creditCard.balance;
@@ -107,8 +104,7 @@ export class UserService {
     return await this.creditCardRepository.save(creditCard);
   }
 
-  async uploadAvatar(cover: Express.Multer.File, userId?: number) {
-    const user = await this.findOneUserById(userId);
+  async uploadAvatar(cover: Express.Multer.File) {
     const metadata = { contentType: 'image/jpeg' };
     const storageRef = ref(storage, 'images/' + cover.originalname);
     const uploadBook = uploadBytesResumable(storageRef, cover.buffer, metadata);
@@ -118,12 +114,21 @@ export class UserService {
     });
 
     const downloadURL = await getDownloadURL(uploadBook.snapshot.ref);
-    if (user) {
-      await this.updateUser(userId, { photo: downloadURL });
-    }
+
     return downloadURL;
   }
 
+  async updateUserAvatar(cover: Express.Multer.File, userId: number) {
+    if (!userId) {
+      throw new BadRequestException('Key not found');
+    }
+
+    const avatar = await this.uploadAvatar(cover);
+
+    const user = await this.updateUser(userId, { photo: avatar });
+
+    return mapToUserProfile(user);
+  }
   async updateUserBalance(data: UpdateUserBalanceDataType) {
     const { amount, cardId, paymentMethod, typeOperation, userId } = data;
     if (paymentMethod === PaymentMethod.CASH) {
@@ -138,6 +143,10 @@ export class UserService {
     const { userId, amount, typeOperation } = data;
 
     const user = await this.findOneUserById(userId);
+
+    if (!user) {
+      throw new BadRequestException('User does not exist');
+    }
 
     switch (typeOperation) {
       case TypeOperation.COST: {
@@ -205,6 +214,10 @@ export class UserService {
   async addCreditCard(userId: number, { balance, bankName }: CreateCreditCardDto) {
     const user = await this.findOneUserById(userId);
 
+    if (!user) {
+      throw new BadRequestException('User does not exist');
+    }
+
     this.checkIsBankExist(bankName);
 
     const creditCard = await this.getCreditCardByName(userId, bankName);
@@ -224,6 +237,10 @@ export class UserService {
 
   async correctUserCashBalance(userId: number, correctBalance: number) {
     const user = await this.findOneUserById(userId);
+
+    if (!user) {
+      throw new BadRequestException('User does not exist');
+    }
 
     if (correctBalance > user.cash) {
       const amountOperation = correctBalance - user.cash;

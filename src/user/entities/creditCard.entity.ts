@@ -20,7 +20,7 @@ export class CreditCard {
   @Column()
   bankBackgroundColor: string
 
-  @ManyToOne(() => User, (user) => user.creditCard)
+  @ManyToOne(() => User, (user) => user.creditCard, {onDelete: 'CASCADE'})
   user: User;
 
   @OneToMany(() => Transaction, transaction => transaction.creditCard)

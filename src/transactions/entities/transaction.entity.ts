@@ -39,7 +39,7 @@ export class Transaction {
   @ManyToOne(() => Subcategory, (subcategory) => subcategory.transaction, { nullable: true })
   subcategory: Subcategory;
 
-  @ManyToOne(() => User, (user) => user.transactions)
+  @ManyToOne(() => User, (user) => user.transactions, {onDelete: 'CASCADE'})
   user: User;
 
   @ManyToOne(() => CreditCard,creditCard => creditCard.transactions, {nullable: true, onDelete: 'CASCADE'})

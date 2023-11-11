@@ -1,28 +1,20 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
-import { UpdateCategoryDto } from './dto/update-category.dto';
+import { AccessTokenGuard } from '@/auth/guards/accessToken.guard';
 
+@UseGuards(AccessTokenGuard)
 @Controller('categories')
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
-  @Post('create')
-  create(@Body() createCategoryDto: CreateCategoryDto) {
-    return this.categoriesService.create(createCategoryDto);
-  }
+  // @Post('create')
+  // create(@Body() createCategoryDto: CreateCategoryDto) {
+  //   return this.categoriesService.create(createCategoryDto);
+  // }
 
-  /*Don't forget to add guard for this route*/
   @Get('get-categories')
   getCategories() {
-    return this.categoriesService.findAllCategoriesWithThemSubcategories()
+    return this.categoriesService.findAllCategoriesWithThemSubcategories();
   }
 }
