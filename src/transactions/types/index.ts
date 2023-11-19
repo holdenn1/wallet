@@ -1,6 +1,5 @@
-import { Banks, UserToProfile } from '@/user/types';
+import {  UserToProfile } from 'src/user/types';
 import { Transaction } from '../entities/transaction.entity';
-import { User } from '@/user/entities/user.entity';
 
 export enum PaymentMethod {
   CREDIT_CARD = 'card',

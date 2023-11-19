@@ -1,6 +1,5 @@
 import { IsNumber, IsOptional, IsString } from 'class-validator';
 import { PaymentMethod, TypeOperation } from '../types';
-import { Banks } from '@/user/types';
 
 export class CreateTransactionDto {
   @IsString()

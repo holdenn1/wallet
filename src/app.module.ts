@@ -7,6 +7,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { SubcategoriesModule } from './subcategories/subcategories.module';
 import { TransactionsModule } from './transactions/transactions.module';
 
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -17,7 +18,7 @@ import { TransactionsModule } from './transactions/transactions.module';
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
         host: configService.get('DB_HOST'),
-        port: +configService.get('DB_PORT'),
+        port: 5432,
         username: configService.get('DB_USERNAME'),
         password: configService.get('DB_PASSWORD'),
         database: configService.get<string>('DB_DATABASE'),

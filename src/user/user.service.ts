@@ -6,7 +6,7 @@ import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
 import { storage } from 'src/firebase';
-import { PaymentMethod, TypeOperation } from '@/transactions/types';
+import { PaymentMethod, TypeOperation } from 'src/transactions/types';
 import { CreditCard } from './entities/creditCard.entity';
 import {
   UpdateUserBalanceDataType,
@@ -14,7 +14,7 @@ import {
   UpdateUserCreditCardBalanceData,
 } from './types';
 import { CreateCreditCardDto } from './dto/create-credit-card.dto';
-import { mapToUserProfile } from '@/auth/mappers';
+import { mapToUserProfile } from 'src/auth/mappers';
 
 @Injectable()
 export class UserService {

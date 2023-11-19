@@ -1,4 +1,4 @@
-import {CategoryType} from "@/categories/types";
+import {CategoryType} from "src/categories/types";
 import {IsOptional, IsString} from "class-validator";
 
 export class CreateSubcategoryDto {

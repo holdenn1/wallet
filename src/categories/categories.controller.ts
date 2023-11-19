@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
-import { AccessTokenGuard } from '@/auth/guards/accessToken.guard';
+import { AccessTokenGuard } from 'src/auth/guards/accessToken.guard';
 
 @UseGuards(AccessTokenGuard)
 @Controller('categories')

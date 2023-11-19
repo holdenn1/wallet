@@ -6,9 +6,9 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { RefreshToken } from '@/auth/entities/refresh-token.entity';
+import { RefreshToken } from 'src/auth/entities/refresh-token.entity';
 import { CreditCard } from './creditCard.entity';
-import { Transaction } from '@/transactions/entities/transaction.entity';
+import { Transaction } from 'src/transactions/entities/transaction.entity';
 
 @Entity({ name: 'app_user' })
 export class User {

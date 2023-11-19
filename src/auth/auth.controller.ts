@@ -15,7 +15,7 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
-import { CreateUserDto } from 'src/user/dto/create-user.dto';
+import { CreateUserDto } from './../user/dto/create-user.dto';
 import { AccessTokenGuard } from './guards/accessToken.guard';
 import { RefreshTokenGuard } from './guards/refreshToken.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -36,26 +36,20 @@ export class AuthController {
   @Get('google/redirect')
   @UseGuards(GoogleGuard)
   async googleAuthRedirect(@Req() req, @Res() res) {
-  
     await this.authService.googleAuth(req.user, res);
   }
 
   @Post('registration')
   @UsePipes(new ValidationPipe())
   @UseInterceptors(FileInterceptor('photo'))
-  registration(
-    @Body() createUserDto: CreateUserDto,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
+  registration(@Body() createUserDto: CreateUserDto, @UploadedFile() file: Express.Multer.File) {
     
     return this.authService.registration(createUserDto, file);
-
   }
 
   @Post('login')
   @UsePipes(new ValidationPipe())
   login(@Body() data: CreateAuthDto) {
-    
     return this.authService.login(data);
   }
 
@@ -91,9 +85,7 @@ export class AuthController {
   }
 
   @Post('recover/user-password')
-  recoverUserPassword(
-    @Body() { token, password }: { token: string; password: string },
-  ) {
+  recoverUserPassword(@Body() { token, password }: { token: string; password: string }) {
     return this.authService.recoverUserPassword(token, password);
   }
 }

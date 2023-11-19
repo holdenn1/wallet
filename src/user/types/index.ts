@@ -1,6 +1,5 @@
-import { PaymentMethod, TypeOperation } from '@/transactions/types';
+import { PaymentMethod, TypeOperation } from 'src/transactions/types';
 import { User } from '../entities/user.entity';
-import { CategoryType } from '@/categories/types';
 
 export enum Banks {
   MONOBANK = 'MonoBank',

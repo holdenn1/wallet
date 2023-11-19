@@ -1,7 +1,6 @@
-import { Transaction } from '@/transactions/entities/transaction.entity';
+import { Transaction } from 'src/transactions/entities/transaction.entity';
 import { TransactionToProfile } from '../types';
-import { Banks } from '@/user/types';
-import { mapToUserProfile } from '@/auth/mappers';
+import { mapToUserProfile } from 'src/auth/mappers';
 
 export const mapTransactionsToProfile = (transactions: Transaction[]): TransactionToProfile[] => {
   return transactions.map((transaction) => ({

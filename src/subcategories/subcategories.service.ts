@@ -3,7 +3,7 @@ import { CreateSubcategoryDto } from './dto/create-subcategory.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Subcategory } from './entities/subcategory.entity';
 import { Repository } from 'typeorm';
-import { CategoriesService } from '@/categories/categories.service';
+import { CategoriesService } from 'src/categories/categories.service';
 
 @Injectable()
 export class SubcategoriesService {

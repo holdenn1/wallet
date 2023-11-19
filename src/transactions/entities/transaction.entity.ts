@@ -8,10 +8,10 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { PaymentMethod, TypeOperation } from '../types';
-import { Category } from '@/categories/entities/category.entity';
-import { User } from '@/user/entities/user.entity';
-import { Subcategory } from '@/subcategories/entities/subcategory.entity';
-import { CreditCard } from '@/user/entities/creditCard.entity';
+import { Category } from 'src/categories/entities/category.entity';
+import { User } from 'src/user/entities/user.entity';
+import { Subcategory } from 'src/subcategories/entities/subcategory.entity';
+import { CreditCard } from 'src/user/entities/creditCard.entity';
 
 @Entity()
 export class Transaction {

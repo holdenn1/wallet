@@ -1,7 +1,7 @@
 import { CategoryType } from '../types';
 import { Column, Entity, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
-import { Subcategory } from '@/subcategories/entities/subcategory.entity';
-import { Transaction } from '@/transactions/entities/transaction.entity';
+import { Subcategory } from 'src/subcategories/entities/subcategory.entity';
+import { Transaction } from 'src/transactions/entities/transaction.entity';
 
 @Entity()
 export class Category {

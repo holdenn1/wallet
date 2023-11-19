@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
-import { UserService } from '@/user/user.service';
-import { CreateUserDto } from '@/user/dto/create-user.dto';
+import { UserService } from 'src/user/user.service';
+import { CreateUserDto } from './../user/dto/create-user.dto';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { DecodedToken, UserDataFromGoogle, UserRequest } from './types';
 import { mapToUserProfile } from './mappers';
@@ -23,10 +23,10 @@ export class AuthService {
   async registration(dto: CreateUserDto, userPhoto: Express.Multer.File): Promise<any> {
     const userExists = await this.userService.findOneUserByEmail(dto.email);
 
-
     if (userExists) {
       throw new BadRequestException('User already exists');
     }
+
     const hash = await argon2.hash(dto.password);
 
     const avatar = await this.userService.uploadAvatar(userPhoto);
@@ -48,7 +48,6 @@ export class AuthService {
   }
 
   async login(dto: CreateAuthDto) {
-    
     const findUser = await this.userService.findOneUserByEmail(dto.email);
 
     if (!findUser) throw new BadRequestException('User does not exist');
@@ -73,12 +72,7 @@ export class AuthService {
       throw new BadRequestException('No user from google');
     }
 
-
-
-
     const user = await this.userService.findOneUserByEmail(userDataFromGoogle.email);
-
-
 
     const createGoogleUser: CreateUserDto = {
       email: userDataFromGoogle.email,
@@ -98,11 +92,9 @@ export class AuthService {
     res.redirect(`${this.configService.get('CLIENT_URL')}#/`);
   }
 
-
   logout(userId: number) {
     return this.refreshTokenService.removeToken(userId);
   }
-
 
   refreshTokens(user: UserRequest) {
     return this.refreshTokenService.refreshTokens(user);
@@ -110,10 +102,6 @@ export class AuthService {
 
   async refreshTokensLogin(userData: UserRequest) {
     try {
-
-
-
-
       const findUser = await this.userService.getUserWithCreditCard(userData.sub);
       const tokens = await this.refreshTokens(userData);
       const user = mapToUserProfile(findUser);
@@ -149,7 +137,7 @@ export class AuthService {
         </div>
         `,
       });
-    } catch (e) {
+    } catch (e) {      
       throw new BadRequestException('An error occurred');
     }
   }
@@ -203,12 +191,9 @@ export class AuthService {
       throw new BadRequestException('Uncorrected link');
     }
 
-    
     const updatedUser = await this.userService.updateUser(decodedToken.sub, {
       isEmailConfirmed: true,
     });
-
-    
 
     return mapToUserProfile(updatedUser);
   }
@@ -222,15 +207,11 @@ export class AuthService {
 
     const user = await this.userService.findOneUserByEmail(decodedToken.email);
 
-    
-
     if (!user) {
       throw new BadRequestException('User does not exist');
     }
 
     const hashPassword = await argon2.hash(password);
-
-    
 
     const updatedUser = await this.userService.updateUser(decodedToken.sub, {
       password: hashPassword,

@@ -1,7 +1,7 @@
 import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { User } from './user.entity';
 import { Banks } from '../types';
-import { Transaction } from '@/transactions/entities/transaction.entity';
+import { Transaction } from 'src/transactions/entities/transaction.entity';
 
 @Entity()
 export class CreditCard {

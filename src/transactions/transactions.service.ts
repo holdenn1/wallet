@@ -1,12 +1,12 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
-import { CategoryType } from '@/categories/types';
-import { UserService } from '@/user/user.service';
+import { CategoryType } from 'src/categories/types';
+import { UserService } from 'src/user/user.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Transaction } from './entities/transaction.entity';
 import { Between, Repository } from 'typeorm';
-import { CategoriesService } from '@/categories/categories.service';
-import { SubcategoriesService } from '@/subcategories/subcategories.service';
+import { CategoriesService } from 'src/categories/categories.service';
+import { SubcategoriesService } from 'src/subcategories/subcategories.service';
 import { CorrectBalanceDto } from './dto/correct-balance.dto';
 import {
   CorrectBallanceMethod,
