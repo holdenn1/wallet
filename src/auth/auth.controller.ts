@@ -1,4 +1,3 @@
-import { mapToUserProfile } from './mappers/index';
 import {
   Controller,
   Response,
@@ -22,8 +21,6 @@ import { RefreshTokenGuard } from './guards/refreshToken.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { GoogleGuard } from './guards/google.guard';
 import { ConfigService } from '@nestjs/config';
-import { Response as EResponse } from 'express';
-import { User } from '@/user/entities/user.entity';
 
 @Controller('auth')
 export class AuthController {
@@ -38,22 +35,15 @@ export class AuthController {
 
   @Get('google/redirect')
   @UseGuards(GoogleGuard)
-  async googleAuthRedirect(@Req() req, @Res({ passthrough: true }) res: EResponse) {
-    const { accessToken, refreshToken, user } = await this.authService.googleAuth(req.user);
-
-    res.cookie(
-      'userData',
-      { tokens: { accessToken, refreshToken }, user: mapToUserProfile(user as User) },
-      { maxAge: 3600000 ,sameSite: 'lax'},
-      
-    );
-    res.redirect(`${this.configService.get('CLIENT_URL')}#/`);
+  async googleAuthRedirect(@Req() req, @Res() res) {
+    await this.authService.googleAuth(req.user, res);
   }
 
   @Post('registration')
   @UsePipes(new ValidationPipe())
   @UseInterceptors(FileInterceptor('photo'))
   registration(@Body() createUserDto: CreateUserDto, @UploadedFile() file: Express.Multer.File) {
+    
     return this.authService.registration(createUserDto, file);
   }
 
