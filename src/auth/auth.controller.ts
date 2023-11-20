@@ -44,7 +44,8 @@ export class AuthController {
     res.cookie(
       'userData',
       { tokens: { accessToken, refreshToken }, user: mapToUserProfile(user as User) },
-      { maxAge: 3600000 },
+      { maxAge: 3600000 ,sameSite: 'lax'},
+      
     );
     res.redirect(`${this.configService.get('CLIENT_URL')}#/`);
   }
