@@ -23,7 +23,7 @@ import { TransactionsModule } from './transactions/transactions.module';
         database: configService.get<string>('DB_DATABASE'),
         autoLoadEntities: true,
         synchronize: true,
-        poolSize: 5
+        poolSize: 2
       }),
       
       inject: [ConfigService],
