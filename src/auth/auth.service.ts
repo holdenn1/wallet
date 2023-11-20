@@ -67,7 +67,7 @@ export class AuthService {
     return { ...tokens, user: mapToUserProfile(findUser) };
   }
 
-  async googleAuth(userDataFromGoogle: UserDataFromGoogle, res) {
+  async googleAuth(userDataFromGoogle: UserDataFromGoogle) {
     if (!userDataFromGoogle) {
       throw new BadRequestException('No user from google');
     }
@@ -88,8 +88,8 @@ export class AuthService {
 
     const tokens = await this.generateTokens(userData);
 
-    res.cookie('userData', { ...tokens, user: mapToUserProfile(userData) }, { maxAge: 3600000 });
-    res.redirect(`${this.configService.get('CLIENT_URL')}#/`);
+
+    return {...tokens, user: mapToUserProfile(userData)}
   }
 
   logout(userId: number) {
