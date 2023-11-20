@@ -7,7 +7,6 @@ import { CategoriesModule } from './categories/categories.module';
 import { SubcategoriesModule } from './subcategories/subcategories.module';
 import { TransactionsModule } from './transactions/transactions.module';
 
-
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -24,7 +23,9 @@ import { TransactionsModule } from './transactions/transactions.module';
         database: configService.get<string>('DB_DATABASE'),
         autoLoadEntities: true,
         synchronize: true,
+        poolSize: 5
       }),
+      
       inject: [ConfigService],
     }),
     UserModule,
