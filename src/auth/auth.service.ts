@@ -90,8 +90,8 @@ export class AuthService {
 
 
     
-    res.cookie('userData', { ...tokens, user: mapToUserProfile(userData) }, { maxAge: 3600000 });
-    res.redirect(`${this.configService.get('CLIENT_URL')}#/`);
+    // res.cookie('userData', { ...tokens, user: mapToUserProfile(userData) }, { maxAge: 3600000 });
+    res.redirect(`${this.configService.get('CLIENT_URL')}#/?token=${tokens.refreshToken}`);
   }
 
   logout(userId: number) {
