@@ -53,6 +53,8 @@ export class AuthController {
     return this.authService.login(data);
   }
 
+
+  
   @UseGuards(AccessTokenGuard)
   @Get('logout')
   logout(@Req() req) {

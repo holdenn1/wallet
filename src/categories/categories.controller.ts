@@ -8,10 +8,10 @@ import { AccessTokenGuard } from 'src/auth/guards/accessToken.guard';
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
-  @Post('create')
-  create(@Body() createCategoryDto: CreateCategoryDto) {
-    return this.categoriesService.create(createCategoryDto);
-  }
+  // @Post('create')
+  // create(@Body() createCategoryDto: CreateCategoryDto) {
+  //   return this.categoriesService.create(createCategoryDto);
+  // }
   @UseGuards(AccessTokenGuard)
   @Get('get-categories')
   getCategories() {

@@ -88,8 +88,6 @@ export class AuthService {
 
     const tokens = await this.generateTokens(userData);
 
-
-    
     // res.cookie('userData', { ...tokens, user: mapToUserProfile(userData) }, { maxAge: 3600000 });
     res.redirect(`${this.configService.get('CLIENT_URL')}#/?token=${tokens.refreshToken}`);
   }
@@ -139,7 +137,7 @@ export class AuthService {
         </div>
         `,
       });
-    } catch (e) {      
+    } catch (e) {
       throw new BadRequestException('An error occurred');
     }
   }
