@@ -27,4 +27,3 @@
 <p>3. Run the project</p>
 <code>npm run start</code>
 <p>4. Navigate to <a href="http://localhost:8000/">http://localhost:8000/</a> in the browser</p>
-<h2>To view hosted application navigate to the <a href="https://holdenn1.github.io/wallet-client/#/">https://holdenn1.github.io/wallet-client/#/</a> in the browser</h2>
